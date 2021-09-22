@@ -1,0 +1,23 @@
+name:           here
+version:        0.1
+category:       Graphics
+synopsis:       Test
+license:        GPL
+license-file:   LICENSE
+author:         Jean-Philippe Bernardy
+maintainer:     jeanphilippe.bernardy@gmail.com
+Cabal-Version:  >= 1.18
+build-type:     Simple
+
+executable k
+  build-depends: base < 666
+               , gasp
+               , hcad
+               , mtl
+               , containers
+  main-is: K.hs
+  other-modules:
+     Common
+     ProMicro
+  default-language:    Haskell2010
+
