@@ -131,7 +131,14 @@ keycapTopToPlate = keycapTopThickness + stemHeight + switchHeight - switchDepthB
 -- 7.8999999999999995
 
 switchPinLen :: R
-switchPinLen = 3.3
+switchPinLen = case keyType of
+  KailhChoc -> 2.85
+  _ -> 3.3
+
+switchPinDiameter :: R
+switchPinDiameter = case keyType of
+  KailhChoc -> 3.3
+  _ -> 4
 
 necessaryDepthBelowPlate :: R
 necessaryDepthBelowPlate = switchDepthBelowPlate + switchPinLen
@@ -166,8 +173,9 @@ extraFramingHeight = 1
 keycapPressedDistanceToTopPlate :: Double
 keycapPressedDistanceToTopPlate =
   case keyType of
-    CherryMX -> 1.75 
-    _ -> 0.5
+    CherryMX -> 1.75
+    KailhChoc -> 1.75
+    ChocV2 -> 0.5
 
 -- >>> main
 mountNegative :: Int -> Int -> Part '[] V3 R
@@ -206,7 +214,7 @@ switchModel =
       truncatedPyramid switchDepthBelowPlate (pure 12) (pure 14),
       forget $ translate ((-switchDepthBelowPlate) *< zAxis) $ center zenith $
        extrude switchPinLen
-       $ scale 4 circle]) $
+       $ scale switchPinDiameter circle]) $
   truncatedPyramid (switchHeight - switchDepthBelowPlate) (pure 16) (pure 12)
 
 keycapModel :: Int -> Int -> Part '[] V3 R
@@ -516,11 +524,13 @@ filterLocs p f i j = if p f i j then f i j else None
 -- Fit a 8mm drill hole.
 wristRestHolderAttachDiameter :: R
 wristRestHolderAttachDiameter = 7.7
-  
+
+wristRestHolderAttach :: Part xs V3 R -> Part '[] V3 R
 wristRestHolderAttach =
-  -- difference (center nadir $ extrude (screwHeadLength + reflen)$ scale 6 $ circle) .
-  -- difference (center nadir $ extrude (screwHeadLength + reflen+3)$ scale 3.5 $ circle) .
-  union (center nadir $ extrude (screwHeadLength + reflen+2.5) $ scale 7.7 circle) -- fits in a 8mm hole
+  forget . 
+  difference (center nadir $ extrude (screwHeadLength + reflen)$ scale 6 $ circle) .
+  difference (center nadir $ extrude (screwHeadLength + reflen+3)$ scale 3.5 $ circle) .
+  union (center nadir $ extrude (screwHeadLength + reflen+2.5) $ scale wristRestHolderAttachDiameter circle) -- fits in a 8mm hole
   where reflen = 4
 
 wristRestRef :: V3 R
@@ -536,11 +546,14 @@ wristRestHolder =
   translate wristRestRef $
   translating (V3 (-d) (-e) 0) wristRestHolderAttach $
   translating (V3 d (-e) 0) wristRestHolderAttach $
-  center nadir $ extrude 5 $ rectangleWithRoundedCorners (wristRestHolderAttachDiameter / 2) $ V2 w h
+  center nadir $ extrude 5 $
+  difference (rectangle (sz - (1 + sqrt 2 / 2) *< pure (wristRestHolderAttachDiameter))) $
+  rectangleWithRoundedCorners (wristRestHolderAttachDiameter / 2) $ V2 w h
   where w = 45
         d = w/2 - wristRestHolderAttachDiameter / 2
         e = 12
         h = 2*e+wristRestHolderAttachDiameter
+        sz = V2 w h
 
 -- >>> main
 
@@ -549,11 +562,6 @@ floorAt z = forget (translate (pinkyFloor + V3 0 0 z) $ center zenith $ extrude 
 
 pruneAtFloor :: R -> Part xs V3 R -> Part (xs ++ '[]) V3 R
 pruneAtFloor z = difference (floorAt z)
-
--- Old MCU support:
-  -- difference (translate (V3 (-20) 10 floorReference) $ xOrientation $ extrude 50 $ rectangleWithChamferCorners 1 $ V2 3 12) $ -- hole for connection cable
-  -- difference (mcuLocat mcuNegative) $
-  -- union (mcuLocat mcuPositive) $
 
 -- >>> main
 
@@ -576,22 +584,21 @@ enclosure2 =
   union (boardRel $ boardSupport) $
 
   -- remove the interior negative space
-  difference (pruneAtFloor 1 -- bottom plate
-              hollowout) $
-
+  difference (pruneAtFloor 1 $ -- so the bottom plate remains
+              union frameNegative interior) $
+  
+  difference frameSupport $
   
   union wristRestHolder $
   union walls $ -- walls + interior
   frameoid 7 id seats -- main support for the frame
   where
-    hollowout =
-      unions [color (V3 0 1 1) $ frameoid segmentHeight id seatHole -- support for the frame
-             ,color (V3 1 0 1) $ interior
-             ,(color (V3 0 0 1) $ frameoid segmentHeight id thickApprox)]  -- negative space where the frame will fit
+    frameSupport = color (V3 0 1 1) $ frameoid segmentHeight id seatHole -- support for the frame
+    frameNegative = color (V3 0 0 1) $ frameoid segmentHeight id thickApprox -- negative space where the frame will fit
     thickApprox i j = translate (V3 0 0 zOfs) $ base (frameThickness+tol+zOfs) (mountSize i j + pure (2*tol))
     seats i j = translate (V3 0 0 (-2)) $ base (frameThickness+4) (keycapSize i j + pure 6)
     walls = frameoid 7 (mkPillar floorReference) seats
-    interior =
+    interior = color (V3 1 0 1) $ 
       frameoid 0.1 (mkPillar (floorReference+1)) (\i j -> translate (V3 0 0 0.5) $ seatHole i j)
     seatHole i j = translate (V3 0 0 extra) $ base (frameThickness+4+extra) (keycapSize i j - pure 1)
       where extra = 0
@@ -636,13 +643,12 @@ main = do
   writeFile "integration-test.scad"
     (rndr $ unions
       [
-        -- keysPreview,
-        -- color' 0.7 (V3 0.5 0.5 0.8) $ meshImport "f.stl",
-        color' 0.3 (V3 0.5 0.0 0.0) $ meshImport "box.stl",
+        keysPreview,
+        color' 0.7 (V3 0.5 0.5 0.8) $ meshImport "f.stl",
+        color (V3 1 0.0 0.0) $ meshImport "box.stl",
         boardRel $ boardAndNin
         -- boardRel $ color (V3 0.7 0.0 0.0) $  boardSupport
       ])
-        -- color' 0.3 (V3 0.5 0.5 0.5) $ meshImport "box-high.stl",
 
 boardRel :: Part xs V3 R -> Part xs (Euclid V3') R
 boardRel =  translate (boardPos + boardAnchor) . rotate3d (10 * degree) yAxis
