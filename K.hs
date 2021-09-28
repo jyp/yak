@@ -47,7 +47,7 @@ keyType = KailhChoc
 
 keycapTopSize :: V2 R
 keycapTopSize = case keyType of
-  KailhChoc -> pure $ keycapWidth - 2
+  KailhChoc -> V2 keycapWidth keycapLen - pure 2
   _ -> pure (0.5 * inch) -- dsa keycap
 
 keycapTolerance :: R
@@ -84,7 +84,8 @@ keycapZ = case keyType of
   KailhChoc -> 2.86 --- CHECK ?
   ChocV2 -> stemHeight + keycapTopThickness --- Print keycaps for that!
 
--- >>> KeycapZ
+-- >>> keycapZ
+-- 2.86
 
 advertisedSwitchSize :: V2 R
 advertisedSwitchSize = pure $ (0.551 + 0.002 + 0.1) * inch
@@ -97,7 +98,7 @@ switchSize :: V2 Double
 switchSize = case keyType of
   CherryMX -> pure (14 - 0.1)  -- transparent filament; 14 for prima easyprint
   ChocV2 -> pure (14 - 0.1)
-  KailhChoc -> V2 14 13.8 -- measured
+  KailhChoc -> V2 14 13.8 - pure 0.1 -- measured
 
 stemHeight :: Double
 stemHeight = case keyType of
@@ -174,7 +175,7 @@ keycapPressedDistanceToTopPlate :: Double
 keycapPressedDistanceToTopPlate =
   case keyType of
     CherryMX -> 1.75
-    KailhChoc -> 1.75
+    KailhChoc -> 2
     ChocV2 -> 0.5
 
 -- >>> main
@@ -203,7 +204,6 @@ mountModel i j =
   -- difference (forget (rectangle switchSize))
   rectangle (mountSize i j)
 
--- >>> main
 switchModel :: Part '[] V3 R
 switchModel =
   color (V3 0.5 0.5 1) $
@@ -217,10 +217,19 @@ switchModel =
        $ scale switchPinDiameter circle]) $
   truncatedPyramid (switchHeight - switchDepthBelowPlate) (pure 16) (pure 12)
 
+
+-- >>> main
+
+-- | Approximation of keycap model for debugging
 keycapModel :: Int -> Int -> Part '[] V3 R
 keycapModel i j = keycapModel' (keycapSize i j) where
   keycapModel' :: V2 R -> Part '[] V3 R
-  keycapModel' sz = color (V3 0.5 0.5 0.5) $ truncatedPyramid keycapZ sz topSize
+  keycapModel' sz = color (V3 0.5 0.5 0.5) $
+                    (union $  truncatedPyramid columnReferenceZ sz topSize) $
+                    forget $
+                    translate (V3 0 0 (-columnReferenceZ)) $
+                    center zenith $
+                    extrude (keycapZ-columnReferenceZ) (rectangle sz)
     where taper = V2 keycapWidth keycapLen - keycapTopSize
           topSize = sz - taper
 
@@ -252,13 +261,20 @@ fan depthAxis rotAxis offset width parts r n = map2 t (parts n)
         t = rotate (rotation3d  (n*^pitch) rotAxis) .
             translate ((-r) *^ depthAxis)
 
+-- | how much below the finger resting position is the longest keycap Y length?
+columnReferenceZ :: R
+columnReferenceZ = case keyType of
+                     KailhChoc -> 0.4 -- actually, mbk keycaps
+                     _ -> keycapZ
+
 circularColumnLargeRadius :: R -> R -> (Int -> Part3 xs R) -> Int -> Part xs V3 R
-circularColumnLargeRadius sep = circularColumnOf 0 keycapZ (keycapLen + sep)
-circularColumnSmallRadius :: R -> R -> (Int -> Part3 xs R) -> Int -> Part xs V3 R
-circularColumnSmallRadius sep = circularColumnOf 0 0 (getXin2 keycapTopSize + sep)
+circularColumnLargeRadius sep = circularColumnOf 0 columnReferenceZ (keycapLen + sep)
+
+-- circularColumnSmallRadius :: R -> R -> (Int -> Part3 xs R) -> Int -> Part xs V3 R
+-- circularColumnSmallRadius sep = circularColumnOf 0 0 (getXin2 keycapTopSize + sep)
 
 circularColumn :: Double -> (Int -> Part3 xs R) -> Int  -> Part xs V3 R
-circularColumn r = (if r > 17 then circularColumnLargeRadius else circularColumnSmallRadius) rowSep r
+circularColumn r = circularColumnLargeRadius rowSep r
 
 limit :: Int -> Int -> (Int -> a) -> Int -> Option a
 limit i j f k | i <= k && k <= j = Yes (f k)
@@ -268,10 +284,17 @@ homeRow :: Int
 homeRow = 0
 
 columnSep :: R
-columnSep = 0.75
+columnSep = case keyType of
+  KailhChoc -> 0.5
+  _ -> 0.75
+
+thumbColumnSep :: R
+thumbColumnSep = 0.75
 
 rowSep :: R
-rowSep = columnSep
+rowSep = case keyType of
+  KailhChoc -> 0.6
+  _ -> 0.75
 
 map2 :: (Functor f1, Functor f2) =>
               (a -> b) -> f1 (f2 a) -> f1 (f2 b)
@@ -286,22 +309,25 @@ alignmentRow = 2 -- row where fingers will align perfectly, if there was no offs
 
 col0ofs :: Euclid V3' R
 col0ofs = case keyType of
-  KailhChoc -> V3 0.8 3 0
-  _ -> (V3 3 3 0)
+  KailhChoc -> V3 (-0.5) 3 0
+  _ -> V3 3 3 0
+
+col0Yaw :: Int -> R
+col0Yaw j = (-2-3*fromIntegral j)*degree
 
 -- >>> main
 fingers :: (Int -> Int -> Part3 xs R) -> Int -> Int -> Option (Part xs V3 R)
-fingers kModel i =
+fingers kModel i = 
   rowBounds $
-  fmap (translate (V3 0 (-ofs i) 0) .
+  fmap (translate (V3 0 (-ofs i) 0) . -- column staggering
         rotate3d (30*degree) xAxis . -- 4 fingers pitch
-        translate (V3 (i *^ (keycapWidth+rowSep)) 0 0)) $
+        translate (V3 (i *^ (keycapWidth+columnSep)) 0 0)) $
   case i of
    0 -> fmap (translate col0ofs) $
             circularColumnOf (-2*degree) keycapZ (keycapWidth+rowSep+1.5) (fRadius i) $
             (\j ->
-               rotate3d ((-2-3*fromIntegral j)*degree) zAxis $
-               relativeTo (V3 (getXin2 keycapTopSize / 2) 0 0) (rotate3d 0.4 yAxis) $
+               rotate3d (col0Yaw j) zAxis $
+               relativeTo (V3 (getXin2 keycapTopSize / 2) 0 0) (rotate3d 0.4 yAxis) $ -- rotate towards the middle of the hand
                ki j)
             -- extra index
    _ -> circularColumn (fRadius i) ki -- four fingers
@@ -345,7 +371,7 @@ thumb kModel i j
     rotate3d (15*degree) xAxis $  -- cluster pitch
     rotate3d (15*degree) zAxis $  -- cluster yaw
     (rotate3d ((7*i)*^degree) zAxis) $ -- column yaw
-    translate (((-i)*^(keycapWidth+columnSep) - 4) *^ xAxis) $ -- column offset (full)
+    translate (((-i)*^(keycapWidth+thumbColumnSep) - 4) *^ xAxis) $ -- column offset (full)
     (rotate3d ((5*i)*^degree) yAxis) $ -- column roll
     translate (j*^ V3 2 (dsa125Width/2 + keycapLen/2 - 2.5) 0 ) $ -- row offset
     relativeTo (V3 0 (-keycapLen/2) 0) (rotate3d ((j*^40)*degree) xAxis) $ -- row pitch
