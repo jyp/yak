@@ -307,7 +307,7 @@ map3 f = map2 (fmap f)
 alignmentRow :: Int
 alignmentRow = 2 -- row where fingers will align perfectly, if there was no offset.
 
-col0ofs :: Euclid V3' R
+col0ofs :: V3 R
 col0ofs = case keyType of
   KailhChoc -> V3 (-0.5) 3 0
   _ -> V3 3 3 0
@@ -523,8 +523,8 @@ frameFinal = difference (ug (hand mountNegative))
 
 -- >>> main
 
-splitTransform :: R -> Part xs V3 R -> Part xs V3 R
-splitTransform delta = translate (pinkyFloor + (splitOffset + delta) *< zAxis)
+-- splitTransform :: R -> Part xs V3 R -> Part xs V3 R
+-- splitTransform delta = translate (pinkyFloor + (splitOffset + delta) *< zAxis)
 
 
 isBorder :: (Int -> Int -> Option a) -> Int -> Int -> Bool
@@ -589,6 +589,7 @@ floorAt z = forget (translate (pinkyFloor + V3 0 0 z) $ center zenith $ extrude 
 pruneAtFloor :: R -> Part xs V3 R -> Part (xs ++ '[]) V3 R
 pruneAtFloor z = difference (floorAt z)
 
+
 -- >>> main
 
 enclosure2 :: Part '[] V3 R
@@ -598,12 +599,12 @@ enclosure2 =
   pruneAtFloor 0 $ -- remove anything below/above floor level
 
   -- hole for battery cable
-  difference (translate (10 *< zAxis + wristRestRef) $ yOrientation $ extrude 50 $ scale 3 $ circle) $
+  -- difference (translate (10 *< zAxis + wristRestRef) $ yOrientation $ extrude 50 $ scale 3 $ circle) $
 
   
   -- access hatches
   difference (translate (V3 0 0 (floorReference-1)) $ center nadir $ extrude 20 $
-               union (translate (V2 (-63) (-36) + dropZ (fingerLoc hand 3 0)) $ rotate2d (pi/4-pi/8+pi/32) $ rectangleWithRoundedCorners 10 (V2 50 30)) $
+               union (translate (V2 (-41) (16) + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 30 60)) $
                (translate (V2 15 0 + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 68 60))) $
 
   difference (boardRel $ union boardNegativeSpace usbcConnectorNegativeSpace) $
@@ -674,11 +675,17 @@ main = do
         color (V3 1 0.0 0.0) $ meshImport "box.stl",
         boardRel $ boardAndNin
         -- boardRel $ color (V3 0.7 0.0 0.0) $  boardSupport
+        -- , translate (floorProj zero) $ forget $ center zenith $ extrude 10 $ scale 200 $ square -- table
       ])
 
-boardRel :: Part xs V3 R -> Part xs (Euclid V3') R
-boardRel =  translate (boardPos + boardAnchor) . rotate3d (10 * degree) yAxis
-  where boardPos = lopLeftFloor + V3 (-1) 0 boardUndersideClearance
+
+
+batteryRel :: Part xs V3 R -> Part xs (V3) R
+batteryRel =  translate (batteryPos) . rotate3d (10 * degree) yAxis
+  where batteryPos = lopLeftFloor + V3 (-1) 0 0
+
+boardRel :: Part xs V3 R -> Part xs V3 R
+boardRel = translate (floorProj (fingerLoc hand (-1) (-1)) + V3 10 5 boardUndersideClearance) .  rotate3d (120 * degree) zAxis . translate (V3 0 4 0)
 
 lopLeftFloor :: V3 R
 lopLeftFloor = floorProj (locPoint (nadir pp))

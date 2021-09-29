@@ -8,12 +8,30 @@ import Algebra.Classes hiding ((*<))
 -- import Control.Category
 import Prelude hiding (Integral, Num(..), (/), divMod, div, mod, fromRational, recip, id, (.))
 
+
+
 import Common
 
-usbConnectorThickness = 2.6
+-- About 18mm wide, 34.2mm in length with USB-C, 33.4 without USB-C, 3.2mm thick
+
+usbConnectorWidthMale :: R
+usbConnectorWidthMale = 8.4
+usbConnectorWidthFemale :: R
+usbConnectorWidthFemale = 8.63 + 2* 0.57
+
+usbConnectorThicknessMale :: R
+usbConnectorThicknessMale = 2.6
+usbConnectorThicknessFemale :: R
+usbConnectorThicknessFemale = 3.16
+
+usbCableSz :: V2 R
+usbCableSz = pure (2*usbConnectorPlasticThicknessPlusTol) + V2 usbConnectorWidthMale usbConnectorThicknessMale
+
+-- >>> usbCableSz :: V2 R
+-- Euclid {fromEuclid = VNext (VNext VZero 13.4) 7.6}
 
 usbConnectorSz :: Euclid V2' R
-usbConnectorSz = (V2 8.4 usbConnectorThickness)
+usbConnectorSz = V2 usbConnectorWidthFemale usbConnectorThicknessFemale
 
 boxExtraHeight :: R
 boxExtraHeight = 7
@@ -48,10 +66,9 @@ mcuShift = translate $ (-0.5::R) *^ (pcbSize + mcuBaseExtr) +  negate positiveSh
 -- >>> ninMain
 
 
--- >>> ninMain
 
 pcbSize :: V3 R
-pcbSize@(V3 pcbWidth pcbLen pcbThickness) = V3 18.25 33.5 1.6
+pcbSize@(V3 pcbWidth pcbLen pcbThickness) = V3 18 33.4 1.6
 
 
 nin0 =
@@ -60,10 +77,10 @@ nin0 =
   on (zenith |<- north)
      (union $
        color (V3 0.7 0.7 0.7) $
-       translate ((-2.0::R) *^ zAxis) $
-       center nadir $
+       translate ((1.2::R) *^ zAxis) $
+       center zenith $
        extrude 6 $
-       translate (V2 0 (usbConnectorThickness/2)) $
+       translate (V2 0 (usbConnectorThicknessFemale/2)) $
        rectangleWithRoundedCorners 1 usbConnectorSz) $
   color (V3 0  0.5 0.5) $ 
   scale' pcbSize cube
@@ -71,16 +88,19 @@ nin0 =
 nin :: Part '[] (Euclid V3') Double
 nin = forget nin0
 
+usbcConnectorNegativeSpace :: Part '[] V3 Double
 usbcConnectorNegativeSpace =
   forget $
   color' 0.1 (V3 0.8 0.0 0.8) $
   withLoc ((zenith |<- north) nin0) $
-  translate ((-2.0::R) *^ zAxis) $
+  translate ((-3.0::R) *^ zAxis) $
   center nadir $ 
   extrude 20 $
-  translate (V2 0 (usbConnectorThickness/2)) $
-  rectangleWithRoundedCorners 1 (usbConnectorSz + pure 2)
+  translate (V2 0 (usbConnectorThicknessFemale/2)) $
+  rectangleWithRoundedCorners 2 usbCableSz
 
+usbConnectorPlasticThicknessPlusTol :: R
+usbConnectorPlasticThicknessPlusTol = 2.5
 
 ninMain :: IO ()
 ninMain = do

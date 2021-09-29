@@ -12,9 +12,9 @@ import Common
 import NiceNano
 
 
-boardThickness = 1.5
-boardLength = 47
-boardWidth = 32
+boardThickness = 1.61
+boardLength = 45.72
+boardWidth = 33.33
 boardMountPointsDistToCenter = 18
 boardMountHoleDiam = 3.5
 boardMountPointsDistToEdge = boardLength / 2 - boardMountPointsDistToCenter
@@ -24,7 +24,7 @@ boardMountPointsDistToEdge = boardLength / 2 - boardMountPointsDistToCenter
 supportTopThickness = 1.6
 supportSideThickness = 1.2
 boardUndersideClearance = 7
-supportTol = 0.6
+supportTol = 0.8
 supportTotalHeight = boardUndersideClearance + boardThickness + supportTopThickness + 4
 supportMinSz = 6
 
@@ -41,7 +41,8 @@ boardShape tol = rectangleWithRoundedCorners 7 $
                  (+pure tol) $
                  V2 boardWidth boardLength 
 
-boardNegativeShape = (boardShape supportTol)
+boardNegativeShape :: Part '[] V2 R
+boardNegativeShape = forget (boardShape supportTol)
 
 -- >>> breadboardMain
 
@@ -67,7 +68,7 @@ board :: Part '[] V3 R
 board = color' 0.3 (V3 0.0 0.0 0.0) $ forget board0 
 
 boardAndNin :: Part '[] V3 R
-boardAndNin = unions [board, nin]
+boardAndNin = unions [board, translate (V3 0 5 0) nin]
 
 breadboardMain :: IO ()
 breadboardMain = do
@@ -75,7 +76,7 @@ breadboardMain = do
    [boardAndNin,
     usbcConnectorNegativeSpace
     -- boardNegativeSpace
-    -- boardSupport
+   , boardSupport
    ]
 
 -- >>> breadboardMain
@@ -85,14 +86,16 @@ boardAnchor :: V3 R
 boardAnchor = negate (locPoint ((nadir |<- northWest) (board0)))
 
 
-boardSupport :: Part3 _ R
+boardSupport :: Part3 '[] R
 boardSupport = forget $
                translate (V3 0 0 (boardThickness/2 + supportTopThickness)) $
                on zenith (push 0.6 (mirrored (V2 0 1) $ translate (V2 0 boardMountPointsDistToCenter) $ metricNutProfile m3 0.4)) $
                center zenith $
                extrude supportTotalHeight $
-               difference boardHoles $
-               mirrored (V2 0 1) $
+               difference boardHoles $ -- holes for screws
+               -- mirrored (V2 0 1) $
+               union (translate (V2 0 (negate (-boardLength/2 + 1))) $
+                      rectangle (V2 (boardMountPointsDistToEdge + supportMinSz) (boardMountPointsDistToEdge + 10))) $ 
                translate (V2 (-boardWidth /2 - supportSideThickness - supportTol)
                              (-boardLength/2 - supportSideThickness - supportTol)) $
                center southWest $
