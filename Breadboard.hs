@@ -23,7 +23,7 @@ boardMountPointsDistToEdge = boardLength / 2 - boardMountPointsDistToCenter
 
 supportTopThickness = 1.6
 supportSideThickness = 1.2
-boardUndersideClearance = 7
+boardUndersideClearance = 8
 supportTol = 0.8
 supportTotalHeight = boardUndersideClearance + boardThickness + supportTopThickness + 4
 supportMinSz = 6
@@ -94,7 +94,7 @@ boardSupport = forget $
                extrude supportTotalHeight $
                difference boardHoles $ -- holes for screws
                -- mirrored (V2 0 1) $
-               union (translate (V2 0 (negate (-boardLength/2 + 1))) $
+               union (translate (V2 0 (negate (-boardLength/2 + 1.5))) $
                       rectangle (V2 (boardMountPointsDistToEdge + supportMinSz) (boardMountPointsDistToEdge + 10))) $ 
                translate (V2 (-boardWidth /2 - supportSideThickness - supportTol)
                              (-boardLength/2 - supportSideThickness - supportTol)) $

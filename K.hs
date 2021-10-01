@@ -555,8 +555,8 @@ wristRestHolderAttach :: Part xs V3 R -> Part '[] V3 R
 wristRestHolderAttach =
   forget . 
   difference (center nadir $ extrude (screwHeadLength + reflen)$ scale 6 $ circle) .
-  difference (center nadir $ extrude (screwHeadLength + reflen+3)$ scale 3.5 $ circle) .
-  union (center nadir $ extrude (screwHeadLength + reflen+2.5) $ scale wristRestHolderAttachDiameter circle) -- fits in a 8mm hole
+  difference (center nadir $ extrude (screwHeadLength + reflen+4)$ scale 3.5 $ circle) .
+  union (center nadir $ extrude (screwHeadLength + reflen+3.5) $ scale wristRestHolderAttachDiameter circle) -- fits in a 8mm hole
   where reflen = 4
 
 wristRestRef :: V3 R
@@ -678,14 +678,14 @@ main = do
         -- , translate (floorProj zero) $ forget $ center zenith $ extrude 10 $ scale 200 $ square -- table
       ])
 
-
+-- >>> main
 
 batteryRel :: Part xs V3 R -> Part xs (V3) R
 batteryRel =  translate (batteryPos) . rotate3d (10 * degree) yAxis
   where batteryPos = lopLeftFloor + V3 (-1) 0 0
 
 boardRel :: Part xs V3 R -> Part xs V3 R
-boardRel = translate (floorProj (fingerLoc hand (-1) (-1)) + V3 10 5 boardUndersideClearance) .  rotate3d (120 * degree) zAxis . translate (V3 0 4 0)
+boardRel = translate (floorProj (fingerLoc hand (-1) (-1)) + V3 10 5 boardUndersideClearance) .  rotate3d (120 * degree) zAxis . translate (V3 1.5 4 0)
 
 lopLeftFloor :: V3 R
 lopLeftFloor = floorProj (locPoint (nadir pp))
