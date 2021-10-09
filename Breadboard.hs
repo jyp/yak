@@ -67,8 +67,11 @@ board0 = extrude boardThickness $
 board :: Part '[] V3 R
 board = color' 0.3 (V3 0.0 0.0 0.0) $ forget board0 
 
+pinDistance :: R
+pinDistance = 0.1 * inch
+
 boardAndNin :: Part '[] V3 R
-boardAndNin = unions [board, translate (V3 0 5 0) nin]
+boardAndNin = unions [board, translate (V3 (pinDistance/2) 5 0) nin]
 
 breadboardMain :: IO ()
 breadboardMain = do
@@ -94,8 +97,8 @@ boardSupport = forget $
                extrude supportTotalHeight $
                difference boardHoles $ -- holes for screws
                -- mirrored (V2 0 1) $
-               union (translate (V2 0 (negate (-boardLength/2 + 1.5))) $
-                      rectangle (V2 (boardMountPointsDistToEdge + supportMinSz) (boardMountPointsDistToEdge + 10))) $ 
+               union (translate (V2 0                                           (negate (-boardLength/2 + 3.5))) $
+                      rectangle (V2 (boardMountPointsDistToEdge + supportMinSz) (boardMountPointsDistToEdge + 8))) $ 
                translate (V2 (-boardWidth /2 - supportSideThickness - supportTol)
                              (-boardLength/2 - supportSideThickness - supportTol)) $
                center southWest $
