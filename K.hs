@@ -385,8 +385,8 @@ thumb kModel i j
 
 
 thumb1stRowOffset :: Int -> Int -> V3 R
-thumb1stRowOffset 1 1 | keyType == KailhChoc = V3 (6) (0.5) 0
-thumb1stRowOffset _ 1 | keyType == KailhChoc = V3 (6) 3.5 0
+thumb1stRowOffset 1 1 | keyType == KailhChoc = V3 (-1) 0 0
+thumb1stRowOffset 2 1 | keyType == KailhChoc = V3 (-1) 0 0
 thumb1stRowOffset _ _ = zero
 
 invThumbRen,thumbRenamer :: (Int -> Int -> a) -> Int -> Int -> a
@@ -685,7 +685,7 @@ batteryRel =  translate (batteryPos) . rotate3d (10 * degree) yAxis
   where batteryPos = lopLeftFloor + V3 (-1) 0 0
 
 boardRel :: Part xs V3 R -> Part xs V3 R
-boardRel = translate (floorProj (fingerLoc hand (-1) (-1)) + V3 10 5 boardUndersideClearance) .  rotate3d (120 * degree) zAxis . translate (V3 1.5 4 0)
+boardRel = translate (floorProj (fingerLoc hand (-1) (-1)) + V3 10 5 boardUndersideClearance) .  rotate3d (120 * degree) zAxis . translate (V3 0.5 2.5 0)
 
 lopLeftFloor :: V3 R
 lopLeftFloor = floorProj (locPoint (nadir pp))
