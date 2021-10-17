@@ -607,7 +607,7 @@ enclosure2 =
                union (translate (V2 (-41) (16) + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 30 60)) $
                (translate (V2 15 0 + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 68 60))) $
 
-  difference (boardRel $ union boardNegativeSpace usbcConnectorNegativeSpace) $
+  difference (boardRel $ union boardNegativeSpace shiftedUsbcConnectorNegativeSpace) $
   union (boardRel $ boardSupport) $
 
   -- remove the interior negative space

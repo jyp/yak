@@ -70,14 +70,21 @@ board = color' 0.3 (V3 0.0 0.0 0.0) $ forget board0
 pinDistance :: R
 pinDistance = 0.1 * inch
 
+
 boardAndNin :: Part '[] V3 R
-boardAndNin = unions [board, translate (V3 (pinDistance/2) 5 0) nin]
+boardAndNin = unions [board, translate (ninShift + V3 0 5 0) nin]
+
+ninShift :: Euclid V3' R
+ninShift = V3 (pinDistance/2) 0 0
+
+shiftedUsbcConnectorNegativeSpace :: Part3 '[] R
+shiftedUsbcConnectorNegativeSpace = translate ninShift usbcConnectorNegativeSpace
 
 breadboardMain :: IO ()
 breadboardMain = do
   writeFile "board.scad" $ rndr $ unions
    [boardAndNin,
-    usbcConnectorNegativeSpace
+    shiftedUsbcConnectorNegativeSpace
     -- boardNegativeSpace
    , boardSupport
    ]
