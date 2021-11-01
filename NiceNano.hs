@@ -68,7 +68,7 @@ mcuShift = translate $ (-0.5::R) *^ (pcbSize + mcuBaseExtr) +  negate positiveSh
 
 
 pcbSize :: V3 R
-pcbSize@(V3 pcbWidth pcbLen pcbThickness) = V3 18 33.4 1.6
+pcbSize@(V3 pcbWidth pcbLen pcbThickness) = V3 18 33.4 1.62
 
 
 nin0 =
@@ -110,5 +110,7 @@ ninMain = do
 headerHeight :: Double
 headerHeight = 0.122 * inch
 
+-- >>> headerHeight
+-- 3.0987999999999998
 
 -- >>> ninMain

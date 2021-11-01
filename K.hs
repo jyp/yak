@@ -667,10 +667,10 @@ main = do
   writeFile "f-preview.scad" (rndr $ frame2)
   writeFile "k.scad" (rndr $ keysPreview)
   writeFile "k-pressed.scad" (rndr $ keysPreviewPressed)
-  writeFile "integration-test.scad"
-    (rndr $ unions
-      [
-        keysPreview,
+  writeFile "integration-test.scad" 
+    (rndr  $ difference (extrude 100 $ (center west) $ scale 200 square) $ forget $
+      unions [
+        -- keysPreview,
         color' 0.7 (V3 0.5 0.5 0.8) $ meshImport "f.stl",
         color (V3 1 0.0 0.0) $ meshImport "box.stl",
         boardRel $ boardAndNin
