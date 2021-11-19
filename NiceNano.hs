@@ -99,13 +99,23 @@ usbcConnectorNegativeSpace =
   translate (V2 0 (usbConnectorThicknessFemale/2)) $
   rectangleWithRoundedCorners 2 usbCableSz
 
+accessNegativeSpace :: Part '[] V3 R
+accessNegativeSpace = forget $
+  color' 0.1 (V3 0.8 0.0 0.8) $
+  center zenith $ 
+  extrude 20 $
+  rectangle ((V2 (pcbWidth + 3.5) (pcbLen + 5)))
+
+ninNegativeSpace :: Part '[] V3 Double
+ninNegativeSpace = union usbcConnectorNegativeSpace accessNegativeSpace
+
 usbConnectorPlasticThicknessPlusTol :: R
 usbConnectorPlasticThicknessPlusTol = 2.5
 
 ninMain :: IO ()
 ninMain = do
   -- writeFile "mcu.scad" (rndr $ proMicro)
-  writeFile "mcu.scad" (rndr $ unions [nin, usbcConnectorNegativeSpace])
+  writeFile "mcu.scad" (rndr $ unions [nin, ninNegativeSpace])
 
 headerHeight :: Double
 headerHeight = 0.122 * inch

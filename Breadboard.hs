@@ -24,8 +24,8 @@ boardMountPointsDistToEdge = boardLength / 2 - boardMountPointsDistToCenter
 supportTopThickness = 1.6
 supportSideThickness = 1.2
 boardUndersideClearance = 8
-supportTol = 0.8
-supportTotalHeight = boardUndersideClearance + boardThickness + supportTopThickness + 4
+supportTol = 1
+supportTotalHeight = boardUndersideClearance + boardThickness --  + supportTopThickness + 4
 supportMinSz = 6
 
 boardHoles :: Part '[] V2 R
@@ -37,7 +37,7 @@ boardShape :: R
                      '[ '["right"], '["back"], '["left"], '["front"], '["northEast"],
                         '["northWest"], '["southWest"], '["southEast"]]
                      R
-boardShape tol = rectangleWithRoundedCorners 7 $
+boardShape tol = rectangleWithRoundedCorners 5 $
                  (+pure tol) $
                  V2 boardWidth boardLength 
 
@@ -48,12 +48,14 @@ boardNegativeShape = forget (boardShape supportTol)
 
 boardNegativeSpace :: Part '[] V3 R
 boardNegativeSpace =
+  union (unions [screwAccess, shiftedNinNegativeSpace, resetBtnAccess]) $ 
   color' 0.1 (V3 0.0 0.8 0.8) $
   forget $
   translate (V3 0 0 (-boardThickness / 2)) $
-  center zenith $
-  extrude 20 $
+  center nadir $
+  extrude 6 $
   boardNegativeShape
+
 
 board0 :: Part3
                  '[ '["bottom"], '["top"], '["right"], '["back"], '["left"],
@@ -72,21 +74,22 @@ pinDistance = 0.1 * inch
 
 
 boardAndNin :: Part '[] V3 R
-boardAndNin = unions [board, translate (ninShift + V3 0 5 0) nin]
+boardAndNin = unions [board, translate ninShift nin]
 
 ninShift :: Euclid V3' R
-ninShift = V3 (pinDistance/2) 0 0
+ninShift = V3 (pinDistance/2) 5 2 -- 2mm shift up is a hack (unknown cause for shift)
 
-shiftedUsbcConnectorNegativeSpace :: Part3 '[] R
-shiftedUsbcConnectorNegativeSpace = translate ninShift usbcConnectorNegativeSpace
+shiftedNinNegativeSpace :: Part3 '[] R
+shiftedNinNegativeSpace = translate ninShift ninNegativeSpace
+
+                      
 
 breadboardMain :: IO ()
 breadboardMain = do
   writeFile "board.scad" $ rndr $ unions
    [boardAndNin,
-    shiftedUsbcConnectorNegativeSpace
-    -- boardNegativeSpace
-   , boardSupport
+    boardNegativeSpace
+    -- boardSupport
    ]
 
 -- >>> breadboardMain
@@ -95,20 +98,45 @@ breadboardMain = do
 boardAnchor :: V3 R
 boardAnchor = negate (locPoint ((nadir |<- northWest) (board0)))
 
+screwAccess :: Part '[] (Euclid V3') R
+screwAccess =
+  color' 0.1 (V3 0.8 0.0 0.8) $
+  forget $ 
+  translate (V3 0 0 (-(2 + boardThickness))) $
+  center zenith $ 
+  extrude 10 $
+  mirrored (V2 0 1) $
+  translate (V2 0 boardMountPointsDistToCenter) $ scale 8 circle 
+
+resetBtnAccess :: Part '[] V3 R
+resetBtnAccess = 
+  color' 0.1 (V3 0.8 0.0 0.8) $
+  forget $ 
+  center zenith $ 
+  extrude 10 $
+  translate (V2 (7 - boardWidth / 2) (4.5 - boardLength / 2)) $
+  scale 9 square   
+
 
 boardSupport :: Part3 '[] R
 boardSupport = forget $
-               translate (V3 0 0 (boardThickness/2 + supportTopThickness)) $
-               on zenith (push 0.6 (mirrored (V2 0 1) $ translate (V2 0 boardMountPointsDistToCenter) $ metricNutProfile m3 0.4)) $
+               -- translate (V3 0 0 (boardThickness/2 + supportTopThickness)) $
+               -- on zenith (push 0.6 (mirrored (V2 0 1) $ translate (V2 0 boardMountPointsDistToCenter) $ metricNutProfile m3 0.4)) $
                center zenith $
                extrude supportTotalHeight $
                difference boardHoles $ -- holes for screws
                -- mirrored (V2 0 1) $
-               union (translate (V2 0                                           (negate (-boardLength/2 + 3.5))) $
-                      rectangle (V2 (boardMountPointsDistToEdge + supportMinSz) (boardMountPointsDistToEdge + 8))) $ 
-               translate (V2 (-boardWidth /2 - supportSideThickness - supportTol)
-                             (-boardLength/2 - supportSideThickness - supportTol)) $
-               center southWest $
-               rectangle (V2 (boardWidth/2 + supportMinSz) (boardMountPointsDistToEdge + supportMinSz))
+               -- union (translate (V2 0                                           (negate (-boardLength/2 + 3.5))) $
+               --        rectangle (V2 (boardMountPointsDistToEdge + supportMinSz) (boardMountPointsDistToEdge + 8))
+               --       ) $
+               union (unions [translate ((*) <$> V2 d 1 <*>  ((V2 (boardWidth /2) (boardLength / 2)) - pure 5)    ) $ scale 10 $ circle |
+                              d <- [-1,1]]) $
+               translate (V2 0 -- (-boardWidth /2 - supportSideThickness - supportTol)
+                         (-boardLength/2 - supportSideThickness - supportTol)
+                         ) $
+               center south $
+               rectangle
+                 (V2 (boardMountPointsDistToEdge + supportMinSz) (boardMountPointsDistToEdge + 8))
+                  -- (V2 (boardWidth/2 + supportMinSz) (boardMountPointsDistToEdge + supportMinSz))
 
 

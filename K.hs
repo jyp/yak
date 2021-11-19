@@ -593,7 +593,7 @@ pruneAtFloor z = difference (floorAt z)
 -- >>> main
 
 enclosure2 :: Part '[] V3 R
-enclosure2 =
+enclosure2 = -- thumbCutDebug $
   forget $
 
   pruneAtFloor 0 $ -- remove anything below/above floor level
@@ -607,7 +607,7 @@ enclosure2 =
                union (translate (V2 (-41) (16) + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 30 60)) $
                (translate (V2 15 0 + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 68 60))) $
 
-  difference (boardRel $ union boardNegativeSpace shiftedUsbcConnectorNegativeSpace) $
+  difference (boardRel $ boardNegativeSpace) $
   union (boardRel $ boardSupport) $
 
   -- remove the interior negative space
@@ -668,15 +668,23 @@ main = do
   writeFile "k.scad" (rndr $ keysPreview)
   writeFile "k-pressed.scad" (rndr $ keysPreviewPressed)
   writeFile "integration-test.scad" 
-    (rndr  $ difference (extrude 100 $ (center west) $ scale 200 square) $ forget $
+    (rndr  $
+     forget $
       unions [
         -- keysPreview,
-        color' 0.7 (V3 0.5 0.5 0.8) $ meshImport "f.stl",
+        -- color' 0.7 (V3 0.5 0.5 0.8) $ meshImport "f.stl",
         color (V3 1 0.0 0.0) $ meshImport "box.stl",
         boardRel $ boardAndNin
         -- boardRel $ color (V3 0.7 0.0 0.0) $  boardSupport
         -- , translate (floorProj zero) $ forget $ center zenith $ extrude 10 $ scale 200 $ square -- table
       ])
+
+thumbCutDebug :: (a ~ R) => Part xs V3 a -> Part '[] V3 a
+thumbCutDebug x = forget $ difference (
+  (extrude 100 $
+   union (translate (V2 0 (-40)) $ center south $ scale 200 square) $
+    translate (V2 5 0) $
+    (center west) $ scale 200 square)) x  -- cut for debug
 
 -- >>> main
 
