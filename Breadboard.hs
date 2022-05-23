@@ -2,11 +2,11 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 module Breadboard where
 import HCad
-import HCad.Nuts
+-- import HCad.Nuts
 import Algebra.Linear ()
 import Algebra.Classes hiding ((*<))
 -- import Control.Category
-import Prelude hiding (Integral, Num(..), (/), divMod, div, mod, fromRational, recip, id, (.))
+import Prelude hiding (Integral, Num(..), (/), divMod, div, mod, fromRational, recip, (.))
 
 import Common
 import NiceNano
@@ -16,6 +16,7 @@ boardThickness = 1.61
 boardLength = 45.72
 boardWidth = 33.33
 boardMountPointsDistToCenter = 18
+boardMountHoleDiam :: R
 boardMountHoleDiam = 3.5
 boardMountPointsDistToEdge = boardLength / 2 - boardMountPointsDistToCenter
 -- >>> boardMountPointsDistToEdge
@@ -32,8 +33,7 @@ boardHoles :: Part '[] V2 R
 boardHoles = forget $  mirrored (V2 0 1) $ translate (V2 0 boardMountPointsDistToCenter) $ scale (boardMountHoleDiam + 0.2) $ circle 
 
 
-boardShape :: R
-                -> Part2
+boardShape :: R -> Part2
                      '[ '["right"], '["back"], '["left"], '["front"], '["northEast"],
                         '["northWest"], '["southWest"], '["southEast"]]
                      R
@@ -46,9 +46,9 @@ boardNegativeShape = forget (boardShape supportTol)
 
 -- >>> breadboardMain
 
-boardNegativeSpace :: Part '[] V3 R
-boardNegativeSpace =
-  union (unions [screwAccess, shiftedNinNegativeSpace, resetBtnAccess]) $ 
+boardNegativeSpace :: Bool -> Part '[] V3 R
+boardNegativeSpace side =
+  union (unions [screwAccess, shiftedNinNegativeSpace, resetBtnAccess side]) $ 
   color' 0.1 (V3 0.0 0.8 0.8) $
   forget $
   translate (V3 0 0 (-boardThickness / 2)) $
@@ -88,7 +88,7 @@ breadboardMain :: IO ()
 breadboardMain = do
   writeFile "board.scad" $ rndr $ unions
    [boardAndNin,
-    boardNegativeSpace
+    boardNegativeSpace True
     -- boardSupport
    ]
 
@@ -106,16 +106,16 @@ screwAccess =
   center zenith $ 
   extrude 10 $
   mirrored (V2 0 1) $
-  translate (V2 0 boardMountPointsDistToCenter) $ scale 8 circle 
+  translate (V2 0 boardMountPointsDistToCenter) $ scale0 8 circle 
 
-resetBtnAccess :: Part '[] V3 R
-resetBtnAccess = 
+resetBtnAccess :: Bool -> Part '[] V3 R
+resetBtnAccess side = 
   color' 0.1 (V3 0.8 0.0 0.8) $
   forget $ 
   center zenith $ 
   extrude 10 $
-  translate (V2 (7 - boardWidth / 2) (4.5 - boardLength / 2)) $
-  scale 9 square   
+  translate (V2 ((if side then negate else id) (7 - boardWidth / 2)) (4.5 - boardLength / 2)) $
+  scale0 8 circle
 
 
 boardSupport :: Part3 '[] R
@@ -129,7 +129,7 @@ boardSupport = forget $
                -- union (translate (V2 0                                           (negate (-boardLength/2 + 3.5))) $
                --        rectangle (V2 (boardMountPointsDistToEdge + supportMinSz) (boardMountPointsDistToEdge + 8))
                --       ) $
-               union (unions [translate ((*) <$> V2 d 1 <*>  ((V2 (boardWidth /2) (boardLength / 2)) - pure 5)    ) $ scale 10 $ circle |
+               union (unions [translate ((*) <$> V2 d 1 <*>  ((V2 (boardWidth /2) (boardLength / 2)) - pure 5)    ) $ scale0 10 $ circle |
                               d <- [-1,1]]) $
                translate (V2 0 -- (-boardWidth /2 - supportSideThickness - supportTol)
                          (-boardLength/2 - supportSideThickness - supportTol)

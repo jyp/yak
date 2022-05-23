@@ -9,9 +9,8 @@ import HCad
 import Algebra.Linear ()
 import Algebra.Classes
 import Control.Category
-import Prelude hiding (Integral, Num(..), (/), divMod, div, mod, fromRational, recip, id, (.))
-import qualified Prelude
-import Data.List (find, intercalate)
+import Prelude hiding (Integral, Num(..), (/), divMod, div, mod, fromRational, recip, id, (.), Floating(..))
+import Data.List ( intercalate)
 import Data.Foldable
 
 data Option a = Yes {fromYes :: a} | None deriving Functor
@@ -44,7 +43,7 @@ xOrientation = rotate (rotation3d (pi/2) yAxis)
 yOrientation = rotate (rotation3d (pi/2) xAxis)
 
 
-rotate3d :: (Show s, Floating s, Division s, Ring s) =>
+rotate3d :: (Show s, Transcendental s, Ring s) =>
                   s -> V3 s -> Part xs V3 s -> Part xs V3 s
 rotate3d angle axis = rotate (rotation3d angle axis)
 
@@ -134,10 +133,12 @@ angles' _ = []
 angles :: [V2 R] -> [R]
 angles xs = angles' $ last xs : xs ++ [head xs]
 
-dist :: (InnerProdSpace v, Group (v s), Floating s, Field s) => (v s, v s) -> s
+dist :: (InnerProdSpace v, Group (v s), Field s, Roots s) => (v s, v s) -> s
 dist (x,y) = norm (x-y)
 
+rot :: [a] -> [a]
 rot (x:xs) = xs ++ [x]
+invRot :: [a] -> [a]
 invRot xs = last xs : init xs
 
 distances ps = zip (invRot ds) ds
@@ -173,7 +174,7 @@ projectOnPlaneAlongDirecton plane@Loc {locPoint = planeOrigin} d p0 = p1
        -- solving for θ gives the above equation
 
 
-locating :: (ScadV v, Show s, Floating s, Field s, Group (v s)) =>
+locating :: (ScadV v, Show s, Field s, Group (v s)) =>
                   Loc v s
                   -> (Part xs1 v s -> Part xs2 v s) -> Part xs1 v s -> Part xs2 v s
 locating Loc{..} f = translating locPoint (rotating locBase f)

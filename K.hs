@@ -29,10 +29,9 @@ import HCad
 import Algebra.Linear ()
 import Algebra.Classes
 import Control.Category
-import Prelude hiding (Integral, Num(..), (/), divMod, div, mod, fromRational, recip, id, (.))
+import Prelude hiding (Integral, Num(..), (/), divMod, div, mod, fromRational, recip, id, (.), Floating(..))
 import qualified Prelude
 import Common
-import NiceNano
 import Breadboard
 
 data KeyType = CherryMX -- https://datasheet.octopart.com/MX1A-11NW-Cherry-datasheet-34676.pdf
@@ -210,7 +209,7 @@ switchModel =
   forget $
   translate ((-keycapTopThickness-stemHeight+0.01::R) *^ zAxis) $
   (union $ translate ((switchDepthBelowPlate - switchHeight) *< zAxis) $  unions
-     [forget $ center nadir $ extrude 1 (scale 16 square),
+     [forget $ center nadir $ extrude 1 (scale0 16 square),
       truncatedPyramid switchDepthBelowPlate (pure 12) (pure 14),
       forget $ translate ((-switchDepthBelowPlate) *< zAxis) $ center zenith $
        extrude switchPinLen
@@ -355,7 +354,7 @@ fingers kModel i =
 
 -- | Locate a finger (key) position by index.
 fingerLoc :: ('[Zenith] ∈ xs) => ((Int -> Int -> Part3 ModelPoints R) -> Int -> Int -> Option (Part3 xs R)) -> Int -> Int -> V3 R
-fingerLoc f column row = locPoint (zenith (fromYes (f (const $ const $ scale 0.1 cube) column (homeRow+row)))) - (0.5 *< z0 (keycapSize column row))
+fingerLoc f column row = locPoint (zenith (fromYes (f (const $ const $ scale0 0.1 cube) column (homeRow+row)))) - (0.5 *< z0 (keycapSize column row))
 
 -- >>> main
 thumb, thumb' :: (Int -> Int -> Part3 xs R) -> Int -> Int -> Option (Part xs V3 R)
@@ -409,7 +408,7 @@ gather :: (Prelude.Num t1, Prelude.Num t2, Enum t1, Enum t2) =>
                 (t2 -> t1 -> Option a) -> [a]
 gather f = catOptions [f j i | i <- [-8..12], j <- [-8..12]]
 
-withBase :: Floating a => Show a => Field a => ScadV v => Group (v a) => Loc v a -> Part xs v a -> Part xs v a
+withBase :: Transcendental a => Show a => ScadV v => Group (v a) => Loc v a -> Part xs v a -> Part xs v a
 withBase Loc{..} = translate locPoint . rotate locBase
 
 -- >>> main
@@ -554,8 +553,8 @@ wristRestHolderAttachDiameter = 7.7
 wristRestHolderAttach :: Part xs V3 R -> Part '[] V3 R
 wristRestHolderAttach =
   forget . 
-  difference (center nadir $ extrude (screwHeadLength + reflen)$ scale 6 $ circle) .
-  difference (center nadir $ extrude (screwHeadLength + reflen+4)$ scale 3.5 $ circle) .
+  difference (center nadir $ extrude (screwHeadLength + reflen)$ scale0 6 $ circle) .
+  difference (center nadir $ extrude (screwHeadLength + reflen+4)$ scale0 3.5 $ circle) .
   union (center nadir $ extrude (screwHeadLength + reflen+3.5) $ scale wristRestHolderAttachDiameter circle) -- fits in a 8mm hole
   where reflen = 4
 
@@ -584,7 +583,7 @@ wristRestHolder =
 -- >>> main
 
 floorAt :: R -> Part '[] V3 R
-floorAt z = forget (translate (pinkyFloor + V3 0 0 z) $ center zenith $ extrude 100 $ scale 400 square)
+floorAt z = forget (translate (pinkyFloor + V3 0 0 z) $ center zenith $ extrude 100 $ scale0 400 square)
 
 pruneAtFloor :: R -> Part xs V3 R -> Part (xs ++ '[]) V3 R
 pruneAtFloor z = difference (floorAt z)
@@ -607,7 +606,7 @@ enclosure2 = -- thumbCutDebug $
                union (translate (V2 (-41) (16) + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 30 60)) $
                (translate (V2 15 0 + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 68 60))) $
 
-  difference (boardRel $ boardNegativeSpace) $
+  difference (boardRel $ boardNegativeSpace True) $ -- True means switch the button side
   union (boardRel $ boardSupport) $
 
   -- remove the interior negative space
@@ -647,7 +646,7 @@ excludedCorners = [(0,-1),(4,-4), (5,-4), (5,-6), (7,-2)]
 ug :: (Int -> Int -> Option (Part xs v a)) -> Part '[] v a
 ug = unions . gather
 
-instance Module Int R where
+instance Scalable Int R where
   x *^ y = fromIntegral x * y
 
 keysPreview :: Part '[] V3 R
@@ -682,9 +681,9 @@ main = do
 thumbCutDebug :: (a ~ R) => Part xs V3 a -> Part '[] V3 a
 thumbCutDebug x = forget $ difference (
   (extrude 100 $
-   union (translate (V2 0 (-40)) $ center south $ scale 200 square) $
+   union (translate (V2 0 (-40)) $ center south $ scale0 200 square) $
     translate (V2 5 0) $
-    (center west) $ scale 200 square)) x  -- cut for debug
+    (center west) $ scale0 200 square)) x  -- cut for debug
 
 -- >>> main
 
