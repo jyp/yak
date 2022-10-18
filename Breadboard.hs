@@ -96,7 +96,7 @@ breadboardMain = do
 
 
 boardAnchor :: V3 R
-boardAnchor = negate (locPoint ((nadir |<- northWest) (board0)))
+boardAnchor = negate (locPoint ((nadir |<- northWest) board0))
 
 screwAccess :: Part '[] (Euclid V3') R
 screwAccess =
@@ -114,8 +114,8 @@ resetBtnAccess side =
   forget $ 
   center zenith $ 
   extrude 10 $
-  translate (V2 ((if side then negate else id) (7 - boardWidth / 2)) (4.5 - boardLength / 2)) $
-  scale0 8 circle
+  translate (V2 ((if side then negate else id) (7 - boardWidth / 2)) (5.5 - boardLength / 2)) $
+  scale0 6 circle
 
 
 boardSupport :: Part3 '[] R
@@ -129,7 +129,7 @@ boardSupport = forget $
                -- union (translate (V2 0                                           (negate (-boardLength/2 + 3.5))) $
                --        rectangle (V2 (boardMountPointsDistToEdge + supportMinSz) (boardMountPointsDistToEdge + 8))
                --       ) $
-               union (unions [translate ((*) <$> V2 d 1 <*>  ((V2 (boardWidth /2) (boardLength / 2)) - pure 5)    ) $ scale0 10 $ circle |
+               union (unions [translate ((*) <$> V2 d 1 <*>  (V2 (boardWidth /2) (boardLength / 2) - pure 5)    ) $ scale0 10 $ circle |
                               d <- [-1,1]]) $
                translate (V2 0 -- (-boardWidth /2 - supportSideThickness - supportTol)
                          (-boardLength/2 - supportSideThickness - supportTol)

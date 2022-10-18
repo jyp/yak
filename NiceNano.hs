@@ -2,9 +2,8 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 module NiceNano where
 import HCad
-import HCad.Nuts
 import Algebra.Linear ()
-import Algebra.Classes hiding ((*<))
+import Algebra.Classes
 -- import Control.Category
 import Prelude hiding (Integral, Num(..), (/), divMod, div, mod, fromRational, recip, id, (.))
 
@@ -41,7 +40,10 @@ shiftNegative = translate ((boxHeight/2) *< zAxis)
 
 -- >>> ninMain
 
-mcuPositive :: Part _ V3 R
+mcuPositive :: Part '[ '["bottom"], '["top"], '["right"], '["back"],
+                     '["left"], '["front"], '["northEast"], '["northWest"],
+                     '["southWest"],
+                     '["southEast"]] V3 R
 mcuPositive =
   translate ((-boxHeight/2) *< zAxis) $
   scale' (pcbSize + mcuBaseExtr + boxHeight *< zAxis) cube
@@ -50,9 +52,9 @@ mcuPositive =
 
 positiveShift :: Euclid V3' R
 positiveShift =
-   (V3 0 -- width
-     (-2) -- len
-     (3.1 + (boxHeight/2))) -- thickness
+   V3 0 -- width
+      (-2) -- len
+      (3.1 + (boxHeight/2)) -- thickness
 
 boxHeight :: R
 boxHeight = 17
@@ -68,6 +70,9 @@ mcuShift = translate $ (-0.5::R) *^ (pcbSize + mcuBaseExtr) +  negate positiveSh
 
 
 pcbSize :: V3 R
+pcbWidth :: R
+pcbLen :: R
+pcbThickness :: R
 pcbSize@(V3 pcbWidth pcbLen pcbThickness) = V3 18 33.4 1.62
 
 
@@ -104,7 +109,7 @@ accessNegativeSpace = forget $
   color' 0.1 (V3 0.8 0.0 0.8) $
   center zenith $ 
   extrude 20 $
-  rectangle ((V2 (pcbWidth + 3.5) (pcbLen + 5)))
+  rectangle (V2 (pcbWidth + 3.5) (pcbLen + 5))
 
 ninNegativeSpace :: Part '[] V3 Double
 ninNegativeSpace = union usbcConnectorNegativeSpace accessNegativeSpace
