@@ -1,27 +1,16 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE ParallelListComp #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeInType #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE LambdaCase #-}
 
 module K where
 
@@ -65,7 +54,7 @@ keycapLen = case keyType of
 
 
 dsa125Width :: R
-dsa125Width = (23.11 + keycapTolerance)
+dsa125Width = 23.11 + keycapTolerance
 
 -- >>> keycapWidth
 -- 18.22
@@ -346,7 +335,7 @@ fingers kModel i =
                   | i == 2 = limit (homeRow-3) (homeRow+2) -- wiring is annoying
                   | i >= 4 = limit (homeRow-1) (homeRow+2)
                   | otherwise = limit (homeRow-2) (homeRow+2)
-        ofs i = (fLen 4 - fLen i)
+        ofs i = fLen 4 - fLen i
         ki = \j -> intrinsicPitch (-iPitch j) (kModel i j)
         iPitch _ =  7*degree
 
@@ -369,9 +358,9 @@ thumb kModel i j
     rotate3d (-15*degree) yAxis $ -- cluster roll
     rotate3d (15*degree) xAxis $  -- cluster pitch
     rotate3d (15*degree) zAxis $  -- cluster yaw
-    (rotate3d ((7*i)*^degree) zAxis) $ -- column yaw
+    rotate3d ((7*i)*^degree) zAxis $ -- column yaw
     translate (((-i)*^(keycapWidth+thumbColumnSep) - 4) *^ xAxis) $ -- column offset (full)
-    (rotate3d ((5*i)*^degree) yAxis) $ -- column roll
+    rotate3d ((5*i)*^degree) yAxis $ -- column roll
     translate (j*^ V3 2 (dsa125Width/2 + keycapLen/2 - 2.5) 0 ) $ -- row offset
     relativeTo (V3 0 (-keycapLen/2) 0) (rotate3d ((j*^40)*degree) xAxis) $ -- row pitch
     translate (thumb1stRowOffset i j) $
@@ -450,7 +439,7 @@ mapO g f i j = g i j <$> f i j
 atScrew :: Part3 xs R -> Int -> Int -> Part3 ModelPoints R -> Part3 '[] R
 atScrew sh i j p =
   translate (zWrite floorReference (locPoint ((nadir |<- cornerRelloc (i+1) (j+1)) p))) $
-  translate ((-3) *< z0 ((V2 (fromIntegral (i `mod` 2)) (fromIntegral (j`mod` 2))) - pure 0.5)) $
+  translate ((-3) *< z0 (V2 (fromIntegral (i `mod` 2)) (fromIntegral (j`mod` 2)) - pure 0.5)) $
   forget $ sh
 
 
@@ -539,7 +528,7 @@ isGlobalCorner f i j =
   ((i == 0) && (j == 1)) ||
   (length (filter isYes [f (i+k) (j+l) | k <- [-1,1], l <- [-1,1]]) < 4 -- less than 4 neighbours
     &&
-    (count isYes [f (i+k) (j) | k <- [-1,1]] `mod` 2) == (count isYes [f (i) (j+k) | k <- [-1,1]] `mod` 2))
+    (count isYes [f (i+k) j | k <- [-1,1]] `mod` 2) == (count isYes [f i (j+k) | k <- [-1,1]] `mod` 2))
     -- not the same number of neighbours horiz/vert
 
 filterLocs  :: ((Int -> Int -> Option a) -> Int -> Int -> Bool) -> (Int -> Int -> Option a) -> Int -> Int -> Option a
@@ -572,7 +561,7 @@ wristRestHolder =
   translating (V3 (-d) (-e) 0) wristRestHolderAttach $
   translating (V3 d (-e) 0) wristRestHolderAttach $
   center nadir $ extrude 5 $
-  difference (rectangle (sz - (1 + sqrt 2 / 2) *< pure (wristRestHolderAttachDiameter))) $
+  difference (rectangle (sz - (1 + sqrt 2 / 2) *< pure wristRestHolderAttachDiameter)) $
   rectangleWithRoundedCorners (wristRestHolderAttachDiameter / 2) $ V2 w h
   where w = 45
         d = w/2 - wristRestHolderAttachDiameter / 2
@@ -603,7 +592,7 @@ enclosure2 = -- thumbCutDebug $
   
   -- access hatches
   difference (translate (V3 0 0 (floorReference-1)) $ center nadir $ extrude 20 $
-               union (translate (V2 (-41) (16) + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 30 60)) $
+               union (translate (V2 (-41) 16 + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 30 60)) $
                (translate (V2 15 0 + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 68 60))) $
 
   difference (boardRel $ boardNegativeSpace True) $ -- True means switch the button side
@@ -633,7 +622,7 @@ enclosure2 = -- thumbCutDebug $
 
 debugCorners :: [(Int, Int)]
 debugCorners = [(i,j) | i <- [-8..12], j <- [-8..12], isGlobalCorner cs i j, isYes (cs i j)]
-  where seats i j = base (frameThickness) (keycapSize i j)
+  where seats i j = base frameThickness (keycapSize i j)
         cs = corners (rectangle $ pure 0.1) (hand $ seats)
 
 excludedCorners :: [(Int, Int)]
@@ -680,15 +669,15 @@ main = do
 
 thumbCutDebug :: (a ~ R) => Part xs V3 a -> Part '[] V3 a
 thumbCutDebug x = forget $ difference (
-  (extrude 100 $
+  extrude 100 $
    union (translate (V2 0 (-40)) $ center south $ scale0 200 square) $
     translate (V2 5 0) $
-    (center west) $ scale0 200 square)) x  -- cut for debug
+    center west $ scale0 200 square) x  -- cut for debug
 
 -- >>> main
 
-batteryRel :: Part xs V3 R -> Part xs (V3) R
-batteryRel =  translate (batteryPos) . rotate3d (10 * degree) yAxis
+batteryRel :: Part xs V3 R -> Part xs V3 R
+batteryRel =  translate batteryPos . rotate3d (10 * degree) yAxis
   where batteryPos = lopLeftFloor + V3 (-1) 0 0
 
 boardRel :: Part xs V3 R -> Part xs V3 R
