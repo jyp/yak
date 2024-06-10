@@ -1,3 +1,6 @@
+*.stl
+*.scad
+*~
 dist
 dist-*
 cabal-dev

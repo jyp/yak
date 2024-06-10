@@ -12,7 +12,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 
-module K where
+module Main where
 
 import HCad
 import Algebra.Linear ()
