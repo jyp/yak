@@ -4,7 +4,7 @@ module ProMicro where
 import HCad
 import HCad.Nuts
 import Algebra.Linear ()
-import Algebra.Classes hiding ((*<))
+import Algebra.Classes -- hiding ((*<))
 -- import Control.Category
 import Prelude hiding (Integral, Num(..), (/), divMod, div, mod, fromRational, recip, id, (.))
 
@@ -17,7 +17,7 @@ boxExtraHeight :: R
 boxExtraHeight = 7
 
 shiftNegative :: Part xs V3 R -> Part xs V3 R
-shiftNegative = translate ((boxHeight/2) *< zAxis)
+shiftNegative = translate ((boxHeight/2) *^ zAxis)
 
 -- >>> proMicroMain
 mcuNegative :: Part '[] V3 R
@@ -28,7 +28,7 @@ mcuNegative =
   on zenith (pull (2.6) $ rectangle $ (V2 pcbWidth pcbLen) - pure 1.5) $ -- room for components (and headers top)
   on south  (pull (mMaxThickness m3 + 0.5) $ metricNutProfile m3 0.6) $ -- fixation nut
   on south  (union $ extrude (mMaxThickness m3 + 3) $ metricNutProfile m3 0.6) $ -- fixation nut entry hole
-  on south  (pull (10) $ scale 3.5 $ circle) $ -- fixation screw hole
+  on south  (pull (10) $ scale (3.5 :: R) $ circle) $ -- fixation screw hole
   on nadir (pull (4+boxHeight) $ rectangle $ (V2 pcbWidth pcbLen) + pure tol) $ -- top opening
   on (north |<- zenith)
      (union $
