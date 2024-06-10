@@ -140,7 +140,7 @@ type ModelPoints = '[ '["bottom"], '["top"], '["right"], '["back"], '["left"],
 
 frameThickness :: R
 frameThickness = case keyType of
-  KailhChoc -> 3 -- otherwise the pins hardly stick out and seems really hard to solder (?)
+  KailhChoc -> 4
   _ -> 4
 
 -- | A base square of thickness t and footprint w, 
@@ -167,6 +167,8 @@ keycapPressedDistanceToTopPlate =
     ChocV2 -> 0.5
 
 -- >>> main
+
+-- | Negative space for the mounting frame
 mountNegative :: Int -> Int -> Part '[] V3 R
 mountNegative i j =
   forget $
@@ -181,7 +183,7 @@ mountNegative i j =
 mountSize :: Int -> Int -> V2 R
 mountSize i j = keycapSize i j + 2 *< V2 columnSep rowSep
 
-
+-- | basic shape of keyswitch mountpoint
 mountModel :: Int -> Int -> Part ModelPoints V3 R
 mountModel i j =
   color (V3 1 0 0) $
@@ -660,7 +662,7 @@ main = do
      forget $
       unions [
         -- keysPreview,
-        -- color' 0.7 (V3 0.5 0.5 0.8) $ meshImport "f.stl",
+        color' 0.7 (V3 0.5 0.5 0.8) $ meshImport "f.stl",
         color (V3 1 0.0 0.0) $ meshImport "box.stl",
         boardRel $ boardAndNin
         -- boardRel $ color (V3 0.7 0.0 0.0) $  boardSupport

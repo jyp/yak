@@ -115,7 +115,7 @@ resetBtnAccess side =
   center zenith $ 
   extrude 10 $
   translate (V2 ((if side then negate else id) (7 - boardWidth / 2)) (5.5 - boardLength / 2)) $
-  scale0 6 circle
+  scale0 2.5 circle
 
 
 boardSupport :: Part3 '[] R
