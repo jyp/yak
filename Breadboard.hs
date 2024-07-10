@@ -105,8 +105,8 @@ screwAccess =
   translate (V3 0 0 (-(2 + boardThickness))) $
   center zenith $ 
   extrude 10 $
-  mirrored (V2 0 1) $
-  translate (V2 0 boardMountPointsDistToCenter) $ scale0 8 circle 
+  -- mirrored (V2 0 1) $
+  translate (V2 0 (-boardMountPointsDistToCenter)) $ scale0 8 circle 
 
 resetBtnAccess :: Bool -> Part '[] V3 R
 resetBtnAccess side = 

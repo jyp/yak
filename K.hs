@@ -562,7 +562,8 @@ wristRestHolder =
   translate wristRestRef $
   translating (V3 (-d) (-e) 0) wristRestHolderAttach $
   translating (V3 d (-e) 0) wristRestHolderAttach $
-  center nadir $ extrude 5 $
+  on south (translating (V3 0 (-wrThickness/2) 0) $ push (wristRestHolderAttachDiameter + 1) (scale0 3 $ circle)) $
+  center nadir $ extrude wrThickness $
   difference (rectangle (sz - (1 + sqrt 2 / 2) *< pure wristRestHolderAttachDiameter)) $
   rectangleWithRoundedCorners (wristRestHolderAttachDiameter / 2) $ V2 w h
   where w = 45
@@ -570,7 +571,7 @@ wristRestHolder =
         e = 12
         h = 2*e+wristRestHolderAttachDiameter
         sz = V2 w h
-
+        wrThickness = 5
 -- >>> main
 
 floorAt :: R -> Part '[] V3 R
@@ -585,21 +586,21 @@ pruneAtFloor z = difference (floorAt z)
 enclosure2 :: Part '[] V3 R
 enclosure2 = -- thumbCutDebug $
   forget $
-
+  
   pruneAtFloor 0 $ -- remove anything below/above floor level
-
+  
   -- hole for battery cable
-  -- difference (translate (10 *< zAxis + wristRestRef) $ yOrientation $ extrude 50 $ scale 3 $ circle) $
-
+  difference (translate (10 *< zAxis + wristRestRef) $ yOrientation $ extrude 50 $ scale0 3.0 $ circle) $
   
   -- access hatches
-  difference (translate (V3 0 0 (floorReference-1)) $ center nadir $ extrude 20 $
-               union (translate (V2 (-41) 16 + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 30 60)) $
-               (translate (V2 15 0 + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 68 60))) $
-
-  difference (boardRel $ boardNegativeSpace True) $ -- True means switch the button side
+  -- difference
+  --    (translate (V3 0 0 (floorReference-1)) $ center nadir $ extrude 20 $
+  --    unions [ -- translate (V2 (-41) 16 + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 30 60), -- battery
+  --            translate (V2 15 0 + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 68 60)]) $ -- keyswitches
+   
+  difference (boardRel $ boardNegativeSpace True) $ -- True means switch the side where the reset button hole is cut
   union (boardRel $ boardSupport) $
-
+  
   -- remove the interior negative space
   difference (pruneAtFloor 1 $ -- so the bottom plate remains
               union frameNegative interior) $

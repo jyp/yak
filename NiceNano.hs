@@ -112,7 +112,8 @@ accessNegativeSpace = forget $
   rectangle (V2 (pcbWidth + 3.5) (pcbLen + 5))
 
 ninNegativeSpace :: Part '[] V3 Double
-ninNegativeSpace = union usbcConnectorNegativeSpace accessNegativeSpace
+ninNegativeSpace = usbcConnectorNegativeSpace
+    -- union usbcConnectorNegativeSpace accessNegativeSpace
 
 usbConnectorPlasticThicknessPlusTol :: R
 usbConnectorPlasticThicknessPlusTol = 2.5
