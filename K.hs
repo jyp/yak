@@ -1,6 +1,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeInType #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
@@ -341,6 +341,7 @@ fingers kModel i =
         ki = \j -> intrinsicPitch (-iPitch j) (kModel i j)
         iPitch _ =  7*degree
 
+
 -- >>> main
 
 -- | Locate a finger (key) position by index.
@@ -417,7 +418,7 @@ pinkyHome :: V3 R
 pinkyHome = fingerLoc hand 5 0
 
 pinkyFloor :: V3 R
-pinkyFloor = pinkyHome - (20 - necessaryDepthBelowPlate) *< zAxis -- the higher, the closer the floor will be to the keyswitches
+pinkyFloor = pinkyHome - (20.6 - necessaryDepthBelowPlate) *< zAxis -- the higher, the closer the floor will be to the keyswitches
 
 
 splitOffset :: R
@@ -432,18 +433,25 @@ floorReference = getZ pinkyFloor
 -- | Extend a cube bottom to the floor, thus creating a pillar.
 mkPillar :: R -> Part ModelPoints V3 R -> Part3 '[] R
 mkPillar ref p = prismoid (zip pillarBottom cubeBottom)
-  where cubeBottom = [locPoint ((nadir |<- l) p) | l <- [northWest, southWest, southEast, northEast]]
+  where cubeBottom = bottomOf p
         pillarBottom = map (zWrite ref) cubeBottom
+
+bottomOf :: (Field a, '["northEast"] ∈ xs, '["northWest"] ∈ xs, '["southEast"] ∈ xs, '["southWest"] ∈ xs, '[Nadir] ∈ xs) => Part xs V3 a -> [V3 a]
+bottomOf p = [locPoint ((nadir |<- l) p) | l <- [northWest, southWest, southEast, northEast]]
+
+mkTile :: Part ModelPoints V3 R -> Part2 '[] R
+mkTile p = polygon [V2 x y | V3 x y _ <- (bottomOf p)]
 
 mapO :: (Int -> Int -> a -> b) -> (Int -> Int -> Option a) -> (Int -> Int -> Option b)
 mapO g f i j = g i j <$> f i j
 
+{-
 atScrew :: Part3 xs R -> Int -> Int -> Part3 ModelPoints R -> Part3 '[] R
 atScrew sh i j p =
   translate (zWrite floorReference (locPoint ((nadir |<- cornerRelloc (i+1) (j+1)) p))) $
   translate ((-3) *< z0 (V2 (fromIntegral (i `mod` 2)) (fromIntegral (j`mod` 2)) - pure 0.5)) $
   forget $ sh
-
+-}
 
 screwLength :: R
 screwLength = 11
@@ -493,8 +501,17 @@ webbing' f i j
   | otherwise = Yes (hulls (catOptions ps)) -- hull them
   where ps = [f (i+k) (j+l) | k <- [0,1], l <- [0,1]] -- 4 shapes around i,j
 
-frameoid :: R -> (Part3 ModelPoints R -> Part xs v R) -> (Int -> Int -> Part3 ModelPoints R) -> Part '[] v R
-frameoid d f g = ug (webbing' (map3 f (corners (rectangle $ pure d) (hand g))))
+type PositionFilter = forall a. (Int -> Int -> Option a) -> (Int -> Int -> Option a)
+frameoid :: PositionFilter -> R -> (Part3 ModelPoints R -> Part xs v R) -> (Int -> Int -> Part3 ModelPoints R) -> Part '[] v R
+frameoid g d f = ug . webbing' . map3 f . g . corners (rectangle (pure d)) . hand
+
+boundaryOnly :: PositionFilter
+boundaryOnly f i j | isBorder f i j = f i j
+                   | otherwise = None
+
+isBorder :: (Int -> Int -> Option a) -> Int -> Int -> Bool
+isBorder f i j  = not (all isNone neighbors || all isYes neighbors)
+  where neighbors = [f (i+k) (j+l) | k <- [-1,1], l <- [-1,1]]
 
 frame2 :: Part '[] V3 R
 frame2 = union (ug $ webbing $ corners (rectangle $ pure segmentHeight) $ hand mountModel)
@@ -517,12 +534,9 @@ frameFinal = difference (ug (hand mountNegative))
 -- splitTransform delta = translate (pinkyFloor + (splitOffset + delta) *< zAxis)
 
 
-isBorder :: (Int -> Int -> Option a) -> Int -> Int -> Bool
-isBorder f i j  = any isNone [f (i+k) (j+l) | k <- [-1,1], l <- [-1,1]]
-
 count :: (a -> Bool) -> [a] -> Int
 count p = length . filter p
-
+{-
 isGlobalCorner :: (Int -> Int -> Option a) -> Int -> Int -> Bool
 isGlobalCorner _ 5 5 = True
 isGlobalCorner _ i j | (i,j) `elem` excludedCorners = False
@@ -532,7 +546,7 @@ isGlobalCorner f i j =
     &&
     (count isYes [f (i+k) j | k <- [-1,1]] `mod` 2) == (count isYes [f i (j+k) | k <- [-1,1]] `mod` 2))
     -- not the same number of neighbours horiz/vert
-
+-}
 filterLocs  :: ((Int -> Int -> Option a) -> Int -> Int -> Bool) -> (Int -> Int -> Option a) -> Int -> Int -> Option a
 filterLocs p f i j = if p f i j then f i j else None
 
@@ -544,8 +558,8 @@ wristRestHolderAttachDiameter = 7.7
 wristRestHolderAttach :: Part xs V3 R -> Part '[] V3 R
 wristRestHolderAttach =
   forget . 
-  difference (center nadir $ extrude (screwHeadLength + reflen)$ scale0 6 $ circle) .
-  difference (center nadir $ extrude (screwHeadLength + reflen+4)$ scale0 3.5 $ circle) .
+  -- difference (center nadir $ extrude (screwHeadLength + reflen)$ scale0 6 $ circle) .
+  difference (center nadir $ extrude (screwHeadLength + reflen+4)$ scale0 3.5 $ circle) . -- centering hole
   union (center nadir $ extrude (screwHeadLength + reflen+3.5) $ scale wristRestHolderAttachDiameter circle) -- fits in a 8mm hole
   where reflen = 4
 
@@ -562,7 +576,7 @@ wristRestHolder =
   translate wristRestRef $
   translating (V3 (-d) (-e) 0) wristRestHolderAttach $
   translating (V3 d (-e) 0) wristRestHolderAttach $
-  on south (translating (V3 0 (-wrThickness/2) 0) $ push (wristRestHolderAttachDiameter + 1) (scale0 3 $ circle)) $
+  on south (translating (V3 0 (-wrThickness/2) 0) $ push (wristRestHolderAttachDiameter + 1) (scale0 3 $ circle)) $ -- hole for battery cable
   center nadir $ extrude wrThickness $
   difference (rectangle (sz - (1 + sqrt 2 / 2) *< pure wristRestHolderAttachDiameter)) $
   rectangleWithRoundedCorners (wristRestHolderAttachDiameter / 2) $ V2 w h
@@ -584,50 +598,46 @@ pruneAtFloor z = difference (floorAt z)
 -- >>> main
 
 enclosure2 :: Part '[] V3 R
-enclosure2 = -- thumbCutDebug $
+enclosure2 =
   forget $
-  
-  pruneAtFloor 0 $ -- remove anything below/above floor level
-  
-  -- hole for battery cable
-  difference (translate (10 *< zAxis + wristRestRef) $ yOrientation $ extrude 50 $ scale0 3.0 $ circle) $
-  
-  -- access hatches
-  -- difference
+  pruneAtFloor 0 $ -- delete any support which goes below base plate
+  difference (translate (10 *< zAxis + wristRestRef) $ yOrientation $ extrude 50 $ scale0 3.0 $ circle) $  -- hole for battery cable
+  -- difference -- access hatches
   --    (translate (V3 0 0 (floorReference-1)) $ center nadir $ extrude 20 $
   --    unions [ -- translate (V2 (-41) 16 + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 30 60), -- battery
   --            translate (V2 15 0 + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 68 60)]) $ -- keyswitches
-   
   difference (boardRel $ boardNegativeSpace True) $ -- True means switch the side where the reset button hole is cut
   union (boardRel $ boardSupport) $
-  
-  -- remove the interior negative space
-  difference (pruneAtFloor 1 $ -- so the bottom plate remains
-              union frameNegative interior) $
-  
-  difference frameSupport $
-  
+  difference frameNegative' $
+  union baseplate $ 
+  difference frameNegative $
+  difference interior $
   union wristRestHolder $
-  union walls $ -- walls + interior
-  frameoid 7 id seats -- main support for the frame
+  union frameSupport $
+  body
   where
-    frameSupport = color (V3 0 1 1) $ frameoid segmentHeight id seatHole -- support for the frame
-    frameNegative = color (V3 0 0 1) $ frameoid segmentHeight id thickApprox -- negative space where the frame will fit
+    baseplate = forget $ translate (V3 0 0 floorReference) $ center nadir $ extrude baseplateThickness $ frameoid id 7 mkTile seats
+    frameSupport = frameoid boundaryOnly 7 id seats -- where the frame will rest (after removing the negative space)
+    frameNegative = color (V3 0 1 1) $ frameoid id segmentHeight id seatHole -- negative space for the keyswitches
+    frameNegative' = color (V3 0 0 1) $ frameoid id segmentHeight id thickApprox -- negative space for the frame
     thickApprox i j = translate (V3 0 0 zOfs) $ base (frameThickness+tol+zOfs) (mountSize i j + pure (2*tol))
+    body = frameoid boundaryOnly 7 (mkPillar floorReference) seats
+    -- walls = body - interior
     seats i j = translate (V3 0 0 (-2)) $ base (frameThickness+4) (keycapSize i j + pure 6)
-    walls = frameoid 7 (mkPillar floorReference) seats
     interior = color (V3 1 0 1) $ 
-      frameoid 0.1 (mkPillar (floorReference+1)) (\i j -> translate (V3 0 0 0.5) $ seatHole i j)
+      frameoid id 0.1 (mkPillar (floorReference+baseplateThickness)) (\i j -> translate (V3 0 0 0.5) $ seatHole i j)
     seatHole i j = translate (V3 0 0 extra) $ base (frameThickness+4+extra) (keycapSize i j - pure 1)
       where extra = 0
     tol = 0.4
     zOfs = 20
-
+baseplateThickness :: R
+baseplateThickness = 0.8
+{-
 debugCorners :: [(Int, Int)]
 debugCorners = [(i,j) | i <- [-8..12], j <- [-8..12], isGlobalCorner cs i j, isYes (cs i j)]
   where seats i j = base frameThickness (keycapSize i j)
         cs = corners (rectangle $ pure 0.1) (hand $ seats)
-
+-}
 excludedCorners :: [(Int, Int)]
 excludedCorners = [(0,-1),(4,-4), (5,-4), (5,-6), (7,-2)]
 
@@ -651,9 +661,6 @@ main :: IO ()
 main = do
   writeFile "base.scad" (rndr $ difference (mountNegative 0 0) $ mountModel 0 0 )
   writeFile "box.scad" (rndr $ enclosure2)
-  -- writeFile "box-low-l.scad" (rndr $ mirror xAxis $ enclosure2 Bottom)
-  -- writeFile "box-high-l.scad" (rndr $ mirror xAxis $ enclosure2 Top)
-  -- writeFile "box-high.scad" (rndr $ enclosure2 Top)
   writeFile "f.scad" (rndr $ frameFinal)
   writeFile "f-preview.scad" (rndr $ frame2)
   writeFile "k.scad" (rndr $ keysPreview)
