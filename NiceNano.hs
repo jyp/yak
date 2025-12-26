@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-module NiceNano where
+module NiceNano (nin, ninNegativeSpace) where
 import HCad
 import Algebra.Linear ()
 import Algebra.Classes
@@ -13,18 +13,18 @@ import Common
 
 -- About 18mm wide, 34.2mm in length with USB-C, 33.4 without USB-C, 3.2mm thick
 
-usbConnectorWidthMale :: R
-usbConnectorWidthMale = 8.4
+-- usbConnectorWidthMale :: R
+-- usbConnectorWidthMale = 8.4
 usbConnectorWidthFemale :: R
 usbConnectorWidthFemale = 8.63 + 2* 0.57
 
-usbConnectorThicknessMale :: R
-usbConnectorThicknessMale = 2.6
+-- usbConnectorThicknessMale :: R
+-- usbConnectorThicknessMale = 2.6
 usbConnectorThicknessFemale :: R
 usbConnectorThicknessFemale = 3.16
 
 usbCableSz :: V2 R
-usbCableSz = pure (2*usbConnectorPlasticThicknessPlusTol) + V2 usbConnectorWidthMale usbConnectorThicknessMale
+usbCableSz = V2 11 7 -- pure (2*usbConnectorPlasticThicknessPlusTol) + V2 usbConnectorWidthMale usbConnectorThicknessMale
 
 -- >>> usbCableSz :: V2 R
 -- Euclid {fromEuclid = VNext (VNext VZero 13.4) 7.6}
@@ -108,12 +108,11 @@ accessNegativeSpace :: Part '[] V3 R
 accessNegativeSpace = forget $
   color' 0.1 (V3 0.8 0.0 0.8) $
   center zenith $ 
-  extrude 20 $
+  extrude 10 $
   rectangle (V2 (pcbWidth + 3.5) (pcbLen + 5))
 
 ninNegativeSpace :: Part '[] V3 Double
-ninNegativeSpace = usbcConnectorNegativeSpace
-    -- union usbcConnectorNegativeSpace accessNegativeSpace
+ninNegativeSpace = union usbcConnectorNegativeSpace accessNegativeSpace
 
 usbConnectorPlasticThicknessPlusTol :: R
 usbConnectorPlasticThicknessPlusTol = 2.5

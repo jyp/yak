@@ -11,7 +11,6 @@ import Prelude hiding (Integral, Num(..), (/), divMod, div, mod, fromRational, r
 import Common
 import NiceNano
 
-
 boardThickness = 1.61
 boardLength = 45.72
 boardWidth = 33.33
@@ -77,7 +76,7 @@ boardAndNin :: Part '[] V3 R
 boardAndNin = unions [board, translate ninShift nin]
 
 ninShift :: Euclid V3' R
-ninShift = V3 (pinDistance/2) 5 2 -- 2mm shift up is a hack (unknown cause for shift)
+ninShift = V3 (pinDistance/2) 5 (2 - 2.6) -- 2mm shift up is a hack (unknown cause for shift)
 
 shiftedNinNegativeSpace :: Part3 '[] R
 shiftedNinNegativeSpace = translate ninShift ninNegativeSpace
