@@ -24,10 +24,10 @@ usbConnectorThicknessFemale :: R
 usbConnectorThicknessFemale = 3.16
 
 usbCableSz :: V2 R
-usbCableSz = V2 11 7 -- pure (2*usbConnectorPlasticThicknessPlusTol) + V2 usbConnectorWidthMale usbConnectorThicknessMale
+usbCableSz = V2 9.5 4 -- pure (2*usbConnectorPlasticThicknessPlusTol) + V2 usbConnectorWidthMale usbConnectorThicknessMale
 
 -- >>> usbCableSz :: V2 R
--- Euclid {fromEuclid = VNext (VNext VZero 13.4) 7.6}
+-- Euclid {fromEuclid = VNext (VNext VZero 13.4) 8.6}
 
 usbConnectorSz :: Euclid V2' R
 usbConnectorSz = V2 usbConnectorWidthFemale usbConnectorThicknessFemale
@@ -104,15 +104,26 @@ usbcConnectorNegativeSpace =
   translate (V2 0 (usbConnectorThicknessFemale/2)) $
   rectangleWithRoundedCorners 2 usbCableSz
 
-accessNegativeSpace :: Part '[] V3 R
-accessNegativeSpace = forget $
+-- | where the nicenano will go
+mainNegativeSpace :: Part '[] V3 R
+mainNegativeSpace = forget $
   color' 0.1 (V3 0.8 0.0 0.8) $
   center zenith $ 
-  extrude 10 $
+  extrude 6 $
   rectangle (V2 (pcbWidth + 3.5) (pcbLen + 5))
 
+-- clear path to see leds
+ledsNegativeSpace :: Part '[] V3 R
+ledsNegativeSpace = forget $
+  color' 0.1 (V3 0.8 0.0 0.8) $
+  center zenith $
+  extrude 15 $
+  mirrored (V2 1 0) $ 
+  translate (V2 6 7) $
+  circle
+
 ninNegativeSpace :: Part '[] V3 Double
-ninNegativeSpace = union usbcConnectorNegativeSpace accessNegativeSpace
+ninNegativeSpace = unions [usbcConnectorNegativeSpace,mainNegativeSpace,ledsNegativeSpace]
 
 usbConnectorPlasticThicknessPlusTol :: R
 usbConnectorPlasticThicknessPlusTol = 2.5

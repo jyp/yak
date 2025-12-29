@@ -52,7 +52,7 @@ boardNegativeSpace side =
   forget $
   translate (V3 0 0 (-boardThickness / 2)) $
   center nadir $
-  extrude 6 $
+  extrude (boardThickness + 0.6) $
   boardNegativeShape
 
 
@@ -65,12 +65,25 @@ board0 = extrude boardThickness $
          difference boardHoles $
          boardShape 0
 
+unit :: R
+unit = 2.54
+
 board :: Part '[] V3 R
-board = color' 0.3 (V3 0.0 0.0 0.0) $ forget board0 
+board =forget $
+  on zenith (union $ translate (V3 (-2.5*unit) (6*unit) 0) $ jstPH2) $ 
+  color' 0.3 (V3 0.0 0.0 0.0) $ board0
+
+-- >>> breadboardMain
 
 pinDistance :: R
 pinDistance = 0.1 * inch
 
+jstPH2 :: Part3
+              ['["bottom"], '["top"], '["right"], '["back"], '["left"],
+               '["front"], '["northEast"], '["northWest"], '["southWest"],
+               '["southEast"]]
+              R
+jstPH2 = center nadir $ extrude 6.1 $ rectangle (V2 5.5 6.0)
 
 boardAndNin :: Part '[] V3 R
 boardAndNin = unions [board, translate ninShift nin]
@@ -81,14 +94,12 @@ ninShift = V3 (pinDistance/2) 5 (2 - 2.6) -- 2mm shift up is a hack (unknown cau
 shiftedNinNegativeSpace :: Part3 '[] R
 shiftedNinNegativeSpace = translate ninShift ninNegativeSpace
 
-                      
-
 breadboardMain :: IO ()
 breadboardMain = do
   writeFile "board.scad" $ rndr $ unions
-   [boardAndNin,
-    boardNegativeSpace True
-    -- boardSupport
+   [boardAndNin
+    -- boardNegativeSpace True
+   , boardSupport
    ]
 
 -- >>> breadboardMain
@@ -105,7 +116,7 @@ screwAccess =
   center zenith $ 
   extrude 10 $
   -- mirrored (V2 0 1) $
-  translate (V2 0 (-boardMountPointsDistToCenter)) $ scale0 8 circle 
+  translate (V2 0 (-boardMountPointsDistToCenter)) $ scale0 6.6 circle 
 
 resetBtnAccess :: Bool -> Part '[] V3 R
 resetBtnAccess side = 
@@ -116,26 +127,28 @@ resetBtnAccess side =
   translate (V2 ((if side then negate else id) (7 - boardWidth / 2)) (5.5 - boardLength / 2)) $
   scale0 2.5 circle
 
-
 boardSupport :: Part3 '[] R
 boardSupport = forget $
+               difference (extrude (supportTotalHeight+1) boardHoles) $ -- holes for screws
                -- translate (V3 0 0 (boardThickness/2 + supportTopThickness)) $
                -- on zenith (push 0.6 (mirrored (V2 0 1) $ translate (V2 0 boardMountPointsDistToCenter) $ metricNutProfile m3 0.4)) $
+               union (translate (V3 0 (-boardMountPointsDistToCenter) (extraSupportHeight - supportTotalHeight)) $
+                      center zenith $
+                      extrude extraSupportHeight $
+                      scale (9 :: R) circle
+                     )$
                center zenith $
                extrude supportTotalHeight $
-               difference boardHoles $ -- holes for screws
                -- mirrored (V2 0 1) $
                -- union (translate (V2 0                                           (negate (-boardLength/2 + 3.5))) $
                --        rectangle (V2 (boardMountPointsDistToEdge + supportMinSz) (boardMountPointsDistToEdge + 8))
                --       ) $
                union (unions [translate ((*) <$> V2 d 1 <*>  (V2 (boardWidth /2) (boardLength / 2) - pure 5)    ) $ scale0 10 $ circle |
                               d <- [-1,1]]) $
-               translate (V2 0 -- (-boardWidth /2 - supportSideThickness - supportTol)
-                         (-boardLength/2 - supportSideThickness - supportTol)
-                         ) $
+               translate (V2 0 (-boardLength/2 - supportSideThickness - supportTol)) $
                center south $
                rectangle
-                 (V2 (boardMountPointsDistToEdge + supportMinSz) (boardMountPointsDistToEdge + 8))
-                  -- (V2 (boardWidth/2 + supportMinSz) (boardMountPointsDistToEdge + supportMinSz))
+                 (V2 (boardMountPointsDistToEdge + supportMinSz - 4) (boardMountPointsDistToEdge + 10))
+  where extraSupportHeight = 7
 
-
+-- >>> breadboardMain
