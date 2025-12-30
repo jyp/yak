@@ -599,7 +599,7 @@ pruneAtFloor z = difference (floorAt z)
 
 enclosure2_integration_test :: Part '[] V3 R
 enclosure2_integration_test = forget $
-  intersection (boardRel (extrude 15 (scale (55::R) square))) $
+  intersection (boardRel (translate ((-10) *< zAxis) $ extrude 25 (scale (55::R) square))) $
   enclosure2
 
 enclosure2 :: Part '[] V3 R
@@ -611,7 +611,7 @@ enclosure2 =
      (translate (V3 0 0 (floorReference-1)) $ center nadir $ extrude 20 $
      unions [ translate (V2 (-41) 16 + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 30 60), -- battery
              translate (V2 15 0 + dropZ (fingerLoc hand 3 0)) $ rectangleWithRoundedCorners 10 (V2 68 60)]) $ -- keyswitches
-  difference (boardRel $ boardNegativeSpace True) $ -- True means switch the side where the reset button hole is cut
+  difference (boardRel $ boardNegativeSpace) $
   union (boardRel $ boardSupport) $
   difference frameNegative' $
   union baseplate $
@@ -699,7 +699,7 @@ batteryRel =  translate batteryPos . rotate3d (10 * degree) yAxis
 
 -- | In board relative terms
 boardRel :: Part xs V3 R -> Part xs V3 R
-boardRel = translate (floorProj (fingerLoc hand (-1) (-1)) + V3 10 5 boardUndersideClearance) .  rotate3d (120 * degree) zAxis . translate (V3 0.8 2.5 0)
+boardRel = translate (floorProj (fingerLoc hand (-1) (-1)) + V3 10 5 boardUndersideClearance) .  rotate3d (120 * degree) zAxis . rotate3d (1.5 * degree) xAxis . translate (V3 0.8 3.6 1)
 
 lopLeftFloor :: V3 R
 lopLeftFloor = floorProj (locPoint (nadir pp))

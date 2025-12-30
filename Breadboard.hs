@@ -32,26 +32,27 @@ boardHoles :: Part '[] V2 R
 boardHoles = forget $  mirrored (V2 0 1) $ translate (V2 0 boardMountPointsDistToCenter) $ scale (boardMountHoleDiam + 0.2) $ circle 
 
 
-boardShape :: R -> Part2
+boardShape :: V2 R -> Part2
                      '[ '["right"], '["back"], '["left"], '["front"], '["northEast"],
                         '["northWest"], '["southWest"], '["southEast"]]
                      R
 boardShape tol = rectangleWithRoundedCorners 5 $
-                 (+pure tol) $
+                 (+ tol) $
                  V2 boardWidth boardLength 
 
 boardNegativeShape :: Part '[] V2 R
-boardNegativeShape = forget (boardShape supportTol)
+boardNegativeShape = forget $ (boardShape (pure supportTol))
 
 -- >>> breadboardMain
 
-boardNegativeSpace :: Bool -> Part '[] V3 R
-boardNegativeSpace side =
-  union (unions [screwAccess, shiftedNinNegativeSpace, resetBtnAccess side]) $ 
+boardNegativeSpace :: Part '[] V3 R
+boardNegativeSpace =
+  union (unions [screwAccess, shiftedNinNegativeSpace, resetBtnAccess]) $ 
   color' 0.1 (V3 0.0 0.8 0.8) $
   forget $
   translate (V3 0 0 (-boardThickness / 2)) $
   center nadir $
+  on zenith (pull 3 (boardShape (V2 supportTol (-3)))) $
   extrude (boardThickness + 0.6) $
   boardNegativeShape
 
@@ -63,15 +64,17 @@ board0 :: Part3
                  R
 board0 = extrude boardThickness $
          difference boardHoles $
-         boardShape 0
+         boardShape (pure 0)
 
 unit :: R
 unit = 2.54
 
 board :: Part '[] V3 R
 board =forget $
-  on zenith (union $ translate (V3 (-2.5*unit) (6*unit) 0) $ jstPH2) $ 
+  on zenith (union $ translate (V3 (-4.5*unit) (-8*unit) 0) $ jstPH2) $ 
+  on nadir ((pull (7-1.6) $ mirror (V2 0 1) $ translate resetBtnLoc $ scale (6::R) $ square )) $ 
   color' 0.3 (V3 0.0 0.0 0.0) $ board0
+
 
 -- >>> breadboardMain
 
@@ -89,7 +92,7 @@ boardAndNin :: Part '[] V3 R
 boardAndNin = unions [board, translate ninShift nin]
 
 ninShift :: Euclid V3' R
-ninShift = V3 (pinDistance/2) 5 (2 - 2.6) -- 2mm shift up is a hack (unknown cause for shift)
+ninShift = V3 (pinDistance/2) (2.5*pinDistance) (2 - 2.6) -- 2mm shift up is a hack (unknown cause for shift)
 
 shiftedNinNegativeSpace :: Part3 '[] R
 shiftedNinNegativeSpace = translate ninShift ninNegativeSpace
@@ -98,7 +101,7 @@ breadboardMain :: IO ()
 breadboardMain = do
   writeFile "board.scad" $ rndr $ unions
    [boardAndNin
-    -- boardNegativeSpace True
+   , boardNegativeSpace
    , boardSupport
    ]
 
@@ -118,13 +121,15 @@ screwAccess =
   -- mirrored (V2 0 1) $
   translate (V2 0 (-boardMountPointsDistToCenter)) $ scale0 6.6 circle 
 
-resetBtnAccess :: Bool -> Part '[] V3 R
-resetBtnAccess side = 
+resetBtnLoc = V2 ((negate) (7 - boardWidth / 2)) (5.5 - boardLength / 2)
+
+resetBtnAccess :: Part '[] V3 R
+resetBtnAccess = 
   color' 0.1 (V3 0.8 0.0 0.8) $
   forget $ 
   center zenith $ 
   extrude 10 $
-  translate (V2 ((if side then negate else id) (7 - boardWidth / 2)) (5.5 - boardLength / 2)) $
+  translate resetBtnLoc $
   scale0 2.5 circle
 
 boardSupport :: Part3 '[] R

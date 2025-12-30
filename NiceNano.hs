@@ -82,7 +82,7 @@ nin0 =
   on (zenith |<- north)
      (union $
        color (V3 0.7 0.7 0.7) $
-       translate ((1.2::R) *^ zAxis) $
+       -- translate ((1.2::R) *^ zAxis) $
        center zenith $
        extrude 6 $
        translate (V2 0 (usbConnectorThicknessFemale/2)) $
@@ -93,14 +93,27 @@ nin0 =
 nin :: Part '[] (Euclid V3') Double
 nin = forget nin0
 
+usbcCableNegativeSpace :: Part '[] V3 Double
+usbcCableNegativeSpace = 
+  forget $
+  color' 0.1 (V3 0.8 0.0 0.8) $
+  withLoc ((zenith |<- north) nin0) $
+  translate ((1.8 ::R) *^ zAxis) $
+  center nadir $ 
+  extrude 20 $
+  translate (V2 0 (usbConnectorThicknessFemale/2)) $
+  rectangleWithRoundedCorners 2 (V2 12 7)
+
+-- >>> ninMain
+
 usbcConnectorNegativeSpace :: Part '[] V3 Double
 usbcConnectorNegativeSpace =
   forget $
   color' 0.1 (V3 0.8 0.0 0.8) $
   withLoc ((zenith |<- north) nin0) $
-  translate ((-3.0::R) *^ zAxis) $
+  translate ((-10::R) *^ zAxis) $
   center nadir $ 
-  extrude 20 $
+  extrude 30 $
   translate (V2 0 (usbConnectorThicknessFemale/2)) $
   rectangleWithRoundedCorners 2 usbCableSz
 
@@ -108,9 +121,11 @@ usbcConnectorNegativeSpace =
 mainNegativeSpace :: Part '[] V3 R
 mainNegativeSpace = forget $
   color' 0.1 (V3 0.8 0.0 0.8) $
+  translate (V3 0 (-extraRoomAtBack / 2) 0) $
   center zenith $ 
   extrude 6 $
-  rectangle (V2 (pcbWidth + 3.5) (pcbLen + 5))
+  rectangle (V2 (pcbWidth + 3.5) (pcbLen + 1 + extraRoomAtBack))
+  where extraRoomAtBack = 2.5
 
 -- clear path to see leds
 ledsNegativeSpace :: Part '[] V3 R
@@ -119,11 +134,15 @@ ledsNegativeSpace = forget $
   center zenith $
   extrude 15 $
   mirrored (V2 1 0) $ 
-  translate (V2 6 7) $
+  translate (V2 5 9) $
+  scale (2::R) $
   circle
 
 ninNegativeSpace :: Part '[] V3 Double
-ninNegativeSpace = unions [usbcConnectorNegativeSpace,mainNegativeSpace,ledsNegativeSpace]
+ninNegativeSpace = unions [usbcCableNegativeSpace
+                          , usbcConnectorNegativeSpace
+                          ,mainNegativeSpace
+                          ,ledsNegativeSpace]
 
 usbConnectorPlasticThicknessPlusTol :: R
 usbConnectorPlasticThicknessPlusTol = 2.5
