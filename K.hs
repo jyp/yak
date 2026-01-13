@@ -86,7 +86,7 @@ switchSize :: V2 Double
 switchSize = case keyType of
   CherryMX -> pure (14 - 0.1)  -- transparent filament; 14 for prima easyprint
   ChocV2 -> pure (14 - 0.1)
-  KailhChoc -> V2 14 13.8 - pure 0.1 -- measured
+  KailhChoc -> V2 13.8 13.8 - pure 0.15 -- datasheet gives 13.8. Tighten for friction fit
 
 stemHeight :: Double
 stemHeight = case keyType of
@@ -662,6 +662,7 @@ keysPreview = unions $ concat $ [gather (hand keycapModel), gather (hand (\_ _ -
 keysPreviewPressed :: Part '[] V3 R
 keysPreviewPressed = unions $ concat $ [gather (hand (\i j -> translate (V3 0 0 (-stemHeight)) $ keycapModel i j)), gather (hand (\_ _ -> switchModel))]
 
+-- >>> main
 main :: IO ()
 main = do
   writeFile "base.scad" (rndr $ difference (mountNegative 0 0) $ mountModel 0 0 )
